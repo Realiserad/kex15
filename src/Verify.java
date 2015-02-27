@@ -109,12 +109,11 @@ public class Verify {
 				seed[row][col] = io.getInt()-1; // use 0-indexing internally
 			}
 		}
-		io.close();
 		
 		/* Verify solution by iterating the formula s_{n+1}=graph*s_{n}+seed with s_{0} = 0 */
-		int[] s = seed[0]; // s_{1}
+		int[] s = expand(seed[0], ROWS); // s_{1}
 		for (int i = 1; i < LEN; i++) {
-			s = radd(rmul(graph, s, w), seed[i]);
+			s = radd(rmul(graph, s, w), expand(seed[i], ROWS));
 		}
 		
 		if (onesOnly(s)) {
@@ -122,6 +121,17 @@ public class Verify {
 		} else {
 			System.out.println("NO");
 		}
+		
+		io.close();
+	}
+	
+	/**
+	 * Create a binary array with 1 on position p iff seed contains p. 
+	 */
+	private int[] expand(int[] seed, int len) {
+		int[] a = new int[len];
+		for (int i = 0; i < seed.length; i++) a[seed[i]] = 1;
+		return a;
 	}
 	
 	/**
