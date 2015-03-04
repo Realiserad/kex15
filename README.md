@@ -7,7 +7,7 @@ Returns the minimum number of pursuers required to sweep "g" based on Edvins's c
 int minPursuers(Graph g);
 
 Greedy algorithm
-ArrayList<LinkedList<Integer>> solve(Graph g, int p);
+List solve(Graph g, int p);
 
 Brute force solver
 
