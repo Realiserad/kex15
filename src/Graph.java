@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 /**
@@ -139,14 +140,23 @@ public class Graph {
 	 * Return the cycle in a path.
 	 */
 	private LinkedList<Integer> extractCycle(LinkedList<Integer> path) {
+		/*
+		 * I propose an alternative implementation:
+		 * 	Go backwards in the path and add vertices to cycle until reaching the tail/head.
+		 * 	This way no unnecessary vertices are processed.  
+		 */
 		int tail = path.removeLast(); // The cycle should end in this vertex
 		LinkedList<Integer> cycle = new LinkedList<Integer>();
-		boolean inCycle = false;
-		for (int vertex : path) {
-			if (vertex == tail) inCycle = true;
-			if (inCycle) cycle.addLast(vertex);
+		Iterator<Integer> it = path.descendingIterator(); //iterator in reverse order
+		while (it.hasNext()) {
+			int vertex = it.next();
+			cycle.add(vertex);
+			if (vertex == tail) {
+				return cycle;
+			}
 		}
-		return cycle;
+
+		return null;
 	}
 	
 	/**
