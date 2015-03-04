@@ -17,6 +17,7 @@ public class Graph {
 		System.out.println("Not implemented.");
 	}
 	
+	@SuppressWarnings("unused")
 	private Graph() {
 		/* This constructor is not available */
 	}
