@@ -10,3 +10,5 @@ Greedy algorithm --> int[][] solve(Graph g, int p);
 Brute force solver
 
 Topological ordering
+
+Find cycles (kind of buggy atm)
