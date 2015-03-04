@@ -66,8 +66,8 @@ public class Graph {
 		/* Create neighbour list */
 		neighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
 		for (int i=0; i<vertexCount; i++) neighbours.add(new LinkedList<Integer>());
-		for (int col=0; col<m.length; col++) {
-			for (int row=0; row<m.length; row++) {
+		for (int row=0; row<m.length; row++) {
+			for (int col=0; col<m.length; col++) {
 				if (m[row][col] == 1) {
 					// Add edge col->row
 					neighbours.get(col).add(row);
