@@ -67,10 +67,12 @@ public class Graph {
 		LinkedList<Integer> path = new LinkedList<Integer>();
 		ArrayList<LinkedList<Integer>> cycles = new ArrayList<LinkedList<Integer>>();
 		// Use depth first traversal starting at vertex 1
-		seen.add(1);
-		path.addLast(1);
-		for (int neighbour : list.get(0)) {
-			dfs(neighbour, seen, path, cycles);
+		for (int vertex not visited : graph) {
+			seen = new HashSet<Integer>();
+			path.clear();
+			seen.add(1);
+			path.addLast(1);
+			dfs(vertex, seen, path, cycles);
 		}
 		return cycles;
 	}
