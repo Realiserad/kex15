@@ -100,4 +100,15 @@ public class Graph {
 		}
 		return clone;
 	}
+	
+	/**
+	 * Intersect two lists and return the result as a set, i.e return a set
+	 * containing the element which resides in both lists.
+	 */
+	public HashSet<Integer> intersect(LinkedList<Integer> a, LinkedList<Integer> b) {
+		HashSet<Integer> s1 = new HashSet<Integer>(a);
+		HashSet<Integer> s2 = new HashSet<Integer>(b);
+		s1.retainAll(s2);
+		return s1;
+	}
 }
