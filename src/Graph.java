@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 
@@ -9,12 +10,42 @@ import java.util.LinkedList;
  * @author Realiserad
  */
 public class Graph {
-	private ArrayList<LinkedList<Integer>> list;
+	private ArrayList<LinkedList<Integer>> neighbours;
 	private int[][] m;
 	private int vertexCount, edgeCount;
 	
 	public static void main(String[] args) {
-		System.out.println("Not implemented.");
+		// Cycles {0, 1, 2, 3}, {0, 3}, {2}
+		int[][] m1 = {
+				{ 0, 0, 0, 1 },
+				{ 1, 0, 0, 0 },
+				{ 0, 1, 1, 0 },
+				{ 1, 0, 1, 0 },
+		};
+		Graph g = new Graph(m1);
+		System.out.println(g.getCycles().toString());
+		
+		// Cycles {0, 2, 4}, {1, 2, 3}, {0, 2, 1} {2, 3, 4}
+		int[][] m2 = {
+				{ 0, 1, 0, 0, 1 },
+				{ 0, 0, 1, 0, 0 },
+				{ 1, 0, 0, 1, 0 },
+				{ 0, 1, 0, 0, 1 },
+				{ 0, 0, 1, 0, 0 },
+		};
+		g = new Graph(m2);
+		System.out.println(g.getCycles().toString());
+		// Cycles {0, 1, 2, 3}, {0, 1, 2, 4}, {4, 5}, {2}
+		int[][] m3 = {
+				{ 0, 0, 0, 1, 1, 0 },
+				{ 1, 0, 0, 0, 0, 0 },
+				{ 0, 1, 1, 0, 0, 0 },
+				{ 0, 0, 1, 0, 0, 0 },
+				{ 0, 0, 1, 0, 0, 1 },
+				{ 0, 0, 0, 0, 1, 0 },
+		};
+		g = new Graph(m3);
+		System.out.println(g.getCycles().toString());
 	}
 	
 	@SuppressWarnings("unused")
@@ -32,13 +63,13 @@ public class Graph {
 		this.m = m;
 		this.vertexCount = m.length;
 		/* Create neighbour list */
-		list = new ArrayList<LinkedList<Integer>>(vertexCount);
-		for (int i=0; i<vertexCount; i++) list.add(new LinkedList<Integer>());
+		neighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
+		for (int i=0; i<vertexCount; i++) neighbours.add(new LinkedList<Integer>());
 		for (int col=0; col<m.length; col++) {
 			for (int row=0; row<m.length; row++) {
 				if (m[row][col] == 1) {
 					// Add edge col->row
-					list.get(col-1).add(row);
+					neighbours.get(col).add(row);
 					edgeCount++;
 				}
 			}
@@ -63,45 +94,59 @@ public class Graph {
 	 * Get all cycles in this graph.
 	 */
 	public ArrayList<LinkedList<Integer>> getCycles() {
-		HashSet<Integer> seen = new HashSet<Integer>((int)(vertexCount / 0.75 + 1));
+		// visited[v] is true if vertex v has been visited during current dfs
+		boolean[] visited = new boolean[vertexCount];
+		// traversed[vertexCount*u+v] is true if the edge u->v has been traversed during any dfs
+		boolean[] traversed = new boolean[vertexCount*vertexCount];
+		// path contains the path traveled during current dfs
 		LinkedList<Integer> path = new LinkedList<Integer>();
+		// list of all cycles found
 		ArrayList<LinkedList<Integer>> cycles = new ArrayList<LinkedList<Integer>>();
-		// Use depth first traversal starting at vertex 1
-		for (int vertex not visited : graph) {
-			seen = new HashSet<Integer>();
-			path.clear();
-			seen.add(1);
-			path.addLast(1);
-			dfs(vertex, seen, path, cycles);
+		for (int vertex=0; vertex<vertexCount; vertex++) {
+			for (int neighbour : neighbours.get(vertex)) {
+				if (traversed[vertex*vertexCount+neighbour]) continue;
+				// Start new dfs with vertex as start node
+				Arrays.fill(visited, false);
+				path.clear();
+				visited[vertex] = true;
+				path.add(vertex);
+				dfs(vertex, neighbour, visited, traversed, path, cycles);
+			}
 		}
 		return cycles;
 	}
 	
-	private void dfs(int current, HashSet<Integer> seen, LinkedList<Integer> path, ArrayList<LinkedList<Integer>> cycles) {
+	private void dfs(int previous, int current, boolean[] visited, boolean[] traversed, LinkedList<Integer> path, ArrayList<LinkedList<Integer>> cycles) {
+		// Mark the edge which lead here as traversed
+		traversed[previous*vertexCount+current] = true;
 		// Check if we have a cycle
-		if (seen.contains(current)) {
-			cycles.add(clone(path));
+		if (visited[current]) {
+			path.addLast(current);
+			cycles.add(extractCycle(path));
 			return;
 		}
-		// Traverse remaining neighbours
-		seen.add(current);
+		// Continue dfs
+		visited[current] = true;
 		path.addLast(current);
-		for (int neighbour : list.get(current-1)) {
-			dfs(neighbour, seen, path, cycles);
+		for (int neighbour : neighbours.get(current)) {
+			dfs(current, neighbour, visited, traversed, path, cycles);
 		}
-		seen.remove(current);
+		visited[current] = false;
 		path.removeLast();
 	}
 	
 	/**
-	 * Return a deep copy of the LinkedList given as argument.
+	 * Return the cycle in a path.
 	 */
-	private LinkedList<Integer> clone(LinkedList<Integer> list) {
-		LinkedList<Integer> clone = new LinkedList<Integer>();
-		for (int i : list) {
-			clone.add(i);
+	private LinkedList<Integer> extractCycle(LinkedList<Integer> path) {
+		int tail = path.removeLast(); // The cycle should end in this vertex
+		LinkedList<Integer> cycle = new LinkedList<Integer>();
+		boolean inCycle = false;
+		for (int vertex : path) {
+			if (vertex == tail) inCycle = true;
+			if (inCycle) cycle.addLast(vertex);
 		}
-		return clone;
+		return cycle;
 	}
 	
 	/**
