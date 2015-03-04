@@ -5,7 +5,7 @@ Tools for The Monk Problem
 
 Returns the minimum number of pursuers required to sweep "g" based on Edvins's conjecture --> int minPursuers(Graph g);
 
-Greedy algorithm --> ArrayList<LinkedList<Integer>> solve(Graph g, int p);
+Greedy algorithm --> int[][] solve(Graph g, int p);
 
 Brute force solver
 
