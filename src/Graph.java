@@ -1,10 +1,13 @@
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Stack;
 
 /**
  * An immutable representation of a directed graph 
@@ -266,67 +269,53 @@ public class Graph {
 	 * 		indegree(v_k) == max(indegree).
 	 */
 	private boolean validConjecturePathExists(int v_0, int x, int maxInDegree, final int[] indegree) {		
-		// Variant of bfs
-		Queue<Integer> q = new LinkedList<Integer>();
-		//TODO need to handle cycles. Cycles are not allowed since the path needs to consist of distinct vertices.
-//		// visited[v] is true if vertex v has been visited during current bfs
-//		boolean[] visited = new boolean[vertexCount];
-//		Arrays.fill(visited, false);
-		q.offer(v_0);
+		// Variant of dfs
+
+		// visited[v] is true if vertex v has been visited during current bfs
+		boolean[] visited = new boolean[vertexCount];
+		Arrays.fill(visited, false);
+		Boolean pathFound = false;
+		dfsConjecture(v_0,x,0,maxInDegree, pathFound, visited, indegree);
+		return pathFound;
+	}
+	
+	/**
+	 * If a valid path could be found from here, pathFound will be true. 
+	 * 
+	 * 
+	 * @param v_i Current vertex 
+	 * @param x The indegree of v_0
+	 * @param i index in path
+	 * @param pathFound "Return"-value, check this after call.
+	 * @param maxDegree maxDegree in graph
+	 * @param visited Keep track of which vertices are visited, cycles are not allowed for this path
+	 * @param indegree array of indegrees of vertices
+	 */
+	private void dfsConjecture(int v_i, int x, int i, int maxInDegree, Boolean pathFound, boolean[] visited, final int[] indegree)  {
+		// Valid path found somewhere in graph, stop all searching
+		if (pathFound) return;
 		
-		/*
-		 * We explore all paths leading out of v_0 simultaneously by using bfs.
-		 * The graph is traversed layer by layer from v_0. For layer 0 (i.e. v_0)
-		 * the value of i should be 0, and then incremented for each new layer. We
-		 * keep track of when we are done with the current layer (and need to 
-		 * increment i) by using two variables for layers. While processing the 
-		 * vertices in the current layer and adding their neighbors to the queue
-		 * we update the nextLayerCount variable so that we know exactly how many 
-		 * vertices there are in the next layer. We also decrease the currentLayerCount
-		 * by one when processing the current layer. When this count reaches zero,
-		 * we know that the current layer is finished and the next layer will be 
-		 * processed now. This means that we can make the "next" layer into the 
-		 * "current" one and also this will be the correct time to update i.
-		 * If we find a vertex v_i which satisfies the condition indegree(v_i)==max(indegree)
-		 * and indegree(v_i) <= x+i, we let v_k := v_i and thus we have found a valid path.
-		 * 
-		 */
-		int currentLayerCount = 1; //Current layer, used to update i when needed
-		int nextLayerCount = 0; //Next layer
-		int i=0;
-		while (!q.isEmpty()) {
-			int v_i = q.poll();
-			if (!(indegree[v_i] <= x+i)) {
-				continue; //This path is not valid
-			}
-			if (indegree[v_i] == maxInDegree) {
-				return true; //Reached maximum indegree
-			}
-			
-			//Update queue and count for layer 1
-			nextLayerCount+=neighbours.get(v_i).size(); //size-1 if has self-loop
-			if (!selfLoop(v_i)) {
-				q.addAll(neighbours.get(v_i));
-			} else {
-				nextLayerCount--;
-				for (int neighbour : neighbours.get(v_i)) { //Optimize
-					if (neighbour != v_i) {
-						q.add(neighbour);
-					}
-				}
-			}
-			
-			//Done with this vertex in this layer
-			currentLayerCount--;
-			if (currentLayerCount==0) {
-				currentLayerCount = nextLayerCount; //Update current layer
-				i++; // We move on to the next layer, i increases
-				nextLayerCount = 0; // Next layer has no vertices atm
+		// Not valid path
+		if (!(indegree[v_i] <= x+i)) return;
+		
+		// Found valid path
+		if (indegree[v_i] == maxInDegree) {
+			pathFound = true;
+			return;
+		}
+		
+		// Continue search for valid path
+		visited[v_i] = true;
+		
+		for (int neighbor : neighbours.get(v_i)) {
+			if (!visited[neighbor]) {
+				dfsConjecture(neighbor, x, i+1, maxInDegree, pathFound, visited, indegree);
 			}
 		}
 		
-		// If we get here, no valid path could be found from v_0
-		return false;
+		/* When leaving a vertex, consider it unvisited */
+		visited[v_i] = false;
+		return;
 	}
 	
 	/**
