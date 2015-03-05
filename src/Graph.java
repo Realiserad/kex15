@@ -301,9 +301,7 @@ public class Graph {
 		// visited[v] is true if vertex v has been visited during current bfs
 		boolean[] visited = new boolean[vertexCount];
 		Arrays.fill(visited, false);
-		final boolean[] pathFound = new boolean[1];
-		dfsConjecture(v_0,x,0,maxInDegree, pathFound, visited, indegree);
-		return pathFound[0];
+		return dfsConjecture(v_0,x,0,maxInDegree, visited, indegree);
 	}
 	
 	/**
@@ -318,17 +316,13 @@ public class Graph {
 	 * @param visited Keep track of which vertices are visited, cycles are not allowed for this path
 	 * @param indegree array of indegrees of vertices
 	 */
-	private void dfsConjecture(int v_i, int x, int i, int maxInDegree, boolean[] pathFound, boolean[] visited, final int[] indegree)  {
-		// Valid path found somewhere in graph, stop all searching
-		if (pathFound[0]) return;
-		
+	private boolean dfsConjecture(int v_i, int x, int i, int maxInDegree, boolean[] visited, final int[] indegree)  {
 		// Not valid path
-		if (!(indegree[v_i] <= x+i)) return;
+		if (!(indegree[v_i] <= x+i)) return false;
 		
 		// Found valid path
 		if (indegree[v_i] == maxInDegree) {
-			pathFound[0] = true;
-			return;
+			return true;
 		}
 		
 		// Continue search for valid path
@@ -336,13 +330,14 @@ public class Graph {
 		
 		for (int neighbor : neighbours.get(v_i)) {
 			if (!visited[neighbor]) {
-				dfsConjecture(neighbor, x, i+1, maxInDegree, pathFound, visited, indegree);
+				boolean hasValidPath = dfsConjecture(neighbor, x, i+1, maxInDegree, visited, indegree);
+				if (hasValidPath) return true;
 			}
 		}
 		
 		/* When leaving a vertex, consider it unvisited */
 		visited[v_i] = false;
-		return;
+		return false;
 	}
 	
 	/**
