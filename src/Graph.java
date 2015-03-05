@@ -30,8 +30,8 @@ public class Graph {
 				{ 1, 0, 1, 0 },
 		};
 		Graph g = new Graph(m1);
-		System.out.println(g.getCycles().toString());
-		
+		System.out.println("Cycles: " + g.getCycles().toString());
+		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
 		// Cycles {0, 2, 4}, {1, 2, 3}, {0, 2, 1} {2, 3, 4}
 		int[][] m2 = {
 				{ 0, 1, 0, 0, 1 },
@@ -41,7 +41,8 @@ public class Graph {
 				{ 0, 0, 1, 0, 0 },
 		};
 		g = new Graph(m2);
-		System.out.println(g.getCycles().toString());
+		System.out.println("Cycles: " + g.getCycles().toString());
+		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
 		// Cycles {0, 1, 2, 3}, {0, 1, 2, 4}, {4, 5}, {2}
 		int[][] m3 = {
 				{ 0, 0, 0, 1, 1, 0 },
@@ -52,7 +53,8 @@ public class Graph {
 				{ 0, 0, 0, 0, 1, 0 },
 		};
 		g = new Graph(m3);
-		System.out.println(g.getCycles().toString());
+		System.out.println("Cycles: " + g.getCycles().toString());
+		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
 		// Cycles {0,1,2,3,4}, {0,1}, {0,1,4}
 		int[][] m4 = {
 				{ 0, 1, 0, 0, 1 },
@@ -62,14 +64,16 @@ public class Graph {
 				{ 0, 1, 0, 0, 0 },
 		};
 		g = new Graph(m4);
-		System.out.println(g.getCycles().toString());
+		System.out.println("Cycles: " + g.getCycles().toString());
+		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
 		int[][] m5 = {
 				{ 1, 0, 1},
 				{ 1, 1, 0},
 				{ 0, 1, 1},
 		};
 		g = new Graph(m5);
-		System.out.println(g.getCycles().toString());
+		System.out.println("Cycles: " + g.getCycles().toString());
+		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
 	}
 	
 	@SuppressWarnings("unused")
@@ -89,6 +93,7 @@ public class Graph {
 		this.lowerBoundPursuers = 0; // Initial lower bound
 		/* Create neighbour list */
 		neighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
+		backNeighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
 		for (int i=0; i<vertexCount; i++) {
 			neighbours.add(new LinkedList<Integer>());
 			backNeighbours.add(new LinkedList<Integer>());
@@ -296,9 +301,9 @@ public class Graph {
 		// visited[v] is true if vertex v has been visited during current bfs
 		boolean[] visited = new boolean[vertexCount];
 		Arrays.fill(visited, false);
-		Boolean pathFound = false;
+		final boolean[] pathFound = new boolean[1];
 		dfsConjecture(v_0,x,0,maxInDegree, pathFound, visited, indegree);
-		return pathFound;
+		return pathFound[0];
 	}
 	
 	/**
@@ -313,16 +318,16 @@ public class Graph {
 	 * @param visited Keep track of which vertices are visited, cycles are not allowed for this path
 	 * @param indegree array of indegrees of vertices
 	 */
-	private void dfsConjecture(int v_i, int x, int i, int maxInDegree, Boolean pathFound, boolean[] visited, final int[] indegree)  {
+	private void dfsConjecture(int v_i, int x, int i, int maxInDegree, boolean[] pathFound, boolean[] visited, final int[] indegree)  {
 		// Valid path found somewhere in graph, stop all searching
-		if (pathFound) return;
+		if (pathFound[0]) return;
 		
 		// Not valid path
 		if (!(indegree[v_i] <= x+i)) return;
 		
 		// Found valid path
 		if (indegree[v_i] == maxInDegree) {
-			pathFound = true;
+			pathFound[0] = true;
 			return;
 		}
 		
