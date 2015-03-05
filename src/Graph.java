@@ -1,8 +1,10 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  * An immutable representation of a directed graph 
@@ -14,6 +16,7 @@ public class Graph {
 	private ArrayList<LinkedList<Integer>> neighbours;
 	private int[][] m;
 	private int vertexCount, edgeCount;
+	private int lowerBoundPursuers;
 	
 	public static void main(String[] args) {
 		// Cycles {0, 1, 2, 3}, {0, 3}, {2}
@@ -63,6 +66,7 @@ public class Graph {
 	public Graph(int[][] m) {
 		this.m = m;
 		this.vertexCount = m.length;
+		this.lowerBoundPursuers = 0; // Initial lower bound
 		/* Create neighbour list */
 		neighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
 		for (int i=0; i<vertexCount; i++) neighbours.add(new LinkedList<Integer>());
@@ -168,5 +172,143 @@ public class Graph {
 		HashSet<Integer> s2 = new HashSet<Integer>(b);
 		s1.retainAll(s2);
 		return s1;
+	}
+	
+	/**
+	 * Use the "Edvin-conjecture" to calculate a lower bound for the minimum number of pursuers needed. 
+	 * @return A lower bound for the number of pursuers needed.
+	 */
+	public int getLowerBoundNrOfPursuers() {
+		// If already calculated lower bound, return it 
+		if (this.lowerBoundPursuers != 0) {
+			return this.lowerBoundPursuers;
+		}
+		
+		/* Recall that:
+		 * The matrix given as first argument should contain
+		 * a one on position m[i][j] if there is an edge j->i
+		 * and zero otherwise.
+		 */
+		
+		// Keep track of the in-degree of each vertex
+		final int[] indegree = new int[vertexCount];
+		for (int r = 0; r < m.length; r++) {
+			for (int c = 0; c < m.length; c++) {
+				indegree[r] += m[r][c];
+			}
+		}
+		
+		// Array of vertices which we will sort based on in-degree 
+		Integer[] vertices = new Integer[vertexCount];
+		for (int i = 0; i<vertices.length; i++) {
+			vertices[i] = i;
+		}
+		
+		// Sort vertices in ascending order of in-degree
+		Arrays.sort(vertices, new Comparator<Integer>() {
+			/**
+			 * Compares its two arguments for order. 
+			 * Returns a negative integer, zero, or a positive
+			 * integer as the first argument is less than, equal 
+			 * to, or greater than the second.
+			 */
+			@Override
+			public int compare(Integer a, Integer b) {
+				return indegree[b]-indegree[a];
+			}
+		});
+		
+		/*
+		 * Now the vertices array should be sorted on indegree and we traverse it from 
+		 * left to right. We process the vertices until one satisfies this condition:
+		 * 	Let v_0 be the vertex we are processing
+		 * 	Let x be v_0's indegree
+		 * 	Find a path leading out of v_0 [v_0,v_1,v_2,v_3,...,v_k] where 
+		 * 		indegree[v_i] <= x+i, 0<=i<=k
+		 * 		and 
+		 * 		indegree(v_k) == max(indegree)
+		 * 	
+		 */
+		int maxInDegree = indegree[indegree.length-1]; //Last element should have highest indegree
+		//This loop guarantees that lower bound will be found, if we are at the last vertex with
+		// highest indegree, a valid path is trivially found.
+		for (int i = 0; i<vertices.length; i++) {
+			int v_0 = vertices[i];
+			int x = indegree[v_0];
+			if (validConjecturePathExists(v_0, x, maxInDegree, indegree)) {
+				this.lowerBoundPursuers = x; //We need x pursuers to start by blocking v_0
+				break;
+			}
+		}
+		
+		return this.lowerBoundPursuers;
+	}
+
+	/**
+	 * Check if a valid conjecture path exists which starts from v_0.
+	 * 
+	 * @param v_0 The vertex which the search starts from
+	 * @param x The indegree of v_0
+	 * @param maxInDegree The maximum indegree in the graph
+	 * @param indegree The array of indegrees of the vertices in the graph
+	 * @return True iff there exists a path leading out of v_0 [v_0,v_1,v_2,v_3,...,v_k] where 
+	 * 		indegree[v_i] <= x+i, 0<=i<=k
+	 * 		and 
+	 * 		indegree(v_k) == max(indegree).
+	 */
+	private boolean validConjecturePathExists(int v_0, int x, int maxInDegree, final int[] indegree) {
+		// Trivial case
+		if (indegree[v_0] == maxInDegree) {
+			return true;
+		}
+		
+		// Variant of bfs
+		Queue<Integer> q = new LinkedList<Integer>();
+		q.offer(v_0);
+		
+		// todo explain my sleep-deprived thoughts 
+		int layer0Count = 1; //Current layer, used to update i when needed
+		int layer1Count = 0; //Next layer
+		int i=0;
+		while (!q.isEmpty()) {
+			int v_i = q.poll();
+			if (!(indegree[v_i] <= x+i)) {
+				continue; //This path is not valid
+			}
+			if (indegree[v_i] == maxInDegree) {
+				return true; //Reached maximum indegree
+			}
+			
+			//Update queue and count for layer 1
+			layer1Count+=neighbours.get(v_i).size(); //size-1 if has self-loop
+			if (!selfLoop(v_i)) {
+				q.addAll(neighbours.get(v_i));
+			} else {
+				layer1Count--;
+				for (int neighbour : neighbours.get(v_i)) { //Optimize
+					if (neighbour != v_i) {
+						q.add(neighbour);
+					}
+				}
+			}
+			
+			//Done with this vertex in this layer
+			layer0Count--;
+			if (layer0Count==0) {
+				layer0Count = layer1Count; //Update current layer
+				i++; // We move on to the next layer, i increases
+				layer1Count = 0; // Next layer has no vertices atm
+			}
+		}
+		
+		// If we get here, no valid path could be found from v_0
+		return false;
+	}
+	
+	/**
+	 * @return True iff the vertex has a self-loop
+	 */
+	private boolean selfLoop(int vertex) {
+		return m[vertex][vertex] == 1;
 	}
 }
