@@ -41,6 +41,10 @@ public class BruteForceSolver implements Solver {
 			for (int len = 1; len <= 2*n; len++) { //Length of solution
 				solution = new int[len][p];
 				//TODO work in progress, how to enumerate all possibilities?
+				// The stupid solution is to create all possible matrices
+				// M[len][p] (each element in the matrix is a value 1 to n and
+				// there are len*p values. The matrices are processed up to 2*n times which
+				// means we have a total of (at most) 2n^(len*p+1) matrices to check
 //				for (int pursuer = 0; pursuer < p; pursuer++) {
 //					
 //				}
