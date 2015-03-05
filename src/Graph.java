@@ -82,6 +82,16 @@ public class Graph {
 	}
 	
 	/**
+	 * Get the adjacency matrix. The matrix will contain
+	 * a one on position m[i][j] if there is an edge j->i
+	 * and zero otherwise.
+	 * @return m Adjacency matrix
+	 */
+	public int[][] getAdjacencyMatrix() {
+		return m;
+	}
+	
+	/**
 	 * Get the number of vertices for this graph.
 	 */
 	public int getVertexCount() {

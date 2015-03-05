@@ -43,56 +43,24 @@ import java.util.StringTokenizer;
  * @author Realiserad
  */
 public class Verify {
-	public class Kattio extends PrintWriter {
-		private BufferedReader r;
-		private String line;
-		private StringTokenizer st;
-		private String token;
-		
-		public Kattio(InputStream i) {
-			super(new BufferedOutputStream(System.out));
-			r = new BufferedReader(new InputStreamReader(i));
-		}
-
-		public boolean hasMoreTokens() {
-			return peekToken() != null;
-		}
-
-		public int getInt() {
-			return Integer.parseInt(nextToken());
-		}
-
-		private String peekToken() {
-			if (token == null) 
-				try {
-					while (st == null || !st.hasMoreTokens()) {
-						line = r.readLine();
-						if (line == null) return null;
-						st = new StringTokenizer(line);
-					}
-					token = st.nextToken();
-				} catch (IOException e) { }
-			return token;
-		}
-
-		private String nextToken() {
-			String ans = peekToken();
-			token = null;
-			return ans;
-		}
-	}
-
+	private final int ROWS;
+	private int[][] graph;
+	private int[] w;
+	
 	public static void main(String[] args) {
 		new Verify();
 	}
 
+	/**
+	 * Constructor suitable for reading graph from System.in.
+	 */
 	public Verify() {
 		Kattio io = new Kattio(System.in);
 		
 		/* Read neighbour matrix */
-		final int ROWS = io.getInt();
-		int[][] graph = new int[ROWS][ROWS];
-		int[] w = new int[ROWS];
+		ROWS = io.getInt();
+		graph = new int[ROWS][ROWS];
+		w = new int[ROWS];
 		for (int row = 0; row < ROWS; row++) {
 			for (int col = 0; col < ROWS; col++) {
 				graph[row][col] = io.getInt() == 0 ? 0 : 1; // 1 means "has edge (col -> row)"
@@ -123,6 +91,35 @@ public class Verify {
 		}
 		
 		io.close();
+	}
+	
+	/**
+	 * This constructor is used for repeated verification of different solutions but on the same graph.
+	 * Suitable for brute-force solution.
+	 * @param g Graph, exception if null
+	 */
+	public Verify(Graph g) {
+		ROWS = g.getVertexCount();
+		graph = g.getAdjacencyMatrix();
+		w = new int[ROWS];
+		for (int row = 0; row < ROWS; row++) {
+			for (int col = 0; col < ROWS; col++) {
+				if (graph[row][col] == 1) w[row]++; // w[i] should contain Hamming weight for row i
+			}
+		}
+	}
+	
+	/**
+	 * 
+	 */
+	public boolean verify(int p, int len, int[][] seed) {
+		/* Verify solution by iterating the formula s_{n+1}=graph*s_{n}+seed with s_{0} = 0 */
+		int[] s = expand(seed[0], ROWS); // s_{1}
+		for (int i = 1; i < len; i++) {
+			s = radd(rmul(graph, s, w), expand(seed[i], ROWS));
+		}
+		
+		return (onesOnly(s));
 	}
 	
 	/**
