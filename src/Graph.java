@@ -189,7 +189,6 @@ public class Graph {
 		 * a one on position m[i][j] if there is an edge j->i
 		 * and zero otherwise.
 		 */
-		
 		// Keep track of the in-degree of each vertex
 		final int[] indegree = new int[vertexCount];
 		for (int r = 0; r < m.length; r++) {
@@ -214,7 +213,7 @@ public class Graph {
 			 */
 			@Override
 			public int compare(Integer a, Integer b) {
-				return indegree[b]-indegree[a];
+				return Integer.compare(indegree[a],indegree[b]);
 			}
 		});
 		
@@ -245,30 +244,45 @@ public class Graph {
 	}
 
 	/**
-	 * Check if a valid conjecture path exists which starts from v_0.
+	 * Check if a valid conjecture path (of distinct vertices) exists which starts from v_0.
 	 * 
 	 * @param v_0 The vertex which the search starts from
 	 * @param x The indegree of v_0
 	 * @param maxInDegree The maximum indegree in the graph
 	 * @param indegree The array of indegrees of the vertices in the graph
 	 * @return True iff there exists a path leading out of v_0 [v_0,v_1,v_2,v_3,...,v_k] where 
-	 * 		indegree[v_i] <= x+i, 0<=i<=k
+	 * 		indegree(v_i) <= x+i, 0<=i<=k
 	 * 		and 
 	 * 		indegree(v_k) == max(indegree).
 	 */
-	private boolean validConjecturePathExists(int v_0, int x, int maxInDegree, final int[] indegree) {
-		// Trivial case
-		if (indegree[v_0] == maxInDegree) {
-			return true;
-		}
-		
+	private boolean validConjecturePathExists(int v_0, int x, int maxInDegree, final int[] indegree) {		
 		// Variant of bfs
 		Queue<Integer> q = new LinkedList<Integer>();
+		//TODO need to handle cycles. Cycles are not allowed since the path needs to consist of distinct vertices.
+//		// visited[v] is true if vertex v has been visited during current bfs
+//		boolean[] visited = new boolean[vertexCount];
+//		Arrays.fill(visited, false);
 		q.offer(v_0);
 		
-		// todo explain my sleep-deprived thoughts 
-		int layer0Count = 1; //Current layer, used to update i when needed
-		int layer1Count = 0; //Next layer
+		/*
+		 * We explore all paths leading out of v_0 simultaneously by using bfs.
+		 * The graph is traversed layer by layer from v_0. For layer 0 (i.e. v_0)
+		 * the value of i should be 0, and then incremented for each new layer. We
+		 * keep track of when we are done with the current layer (and need to 
+		 * increment i) by using two variables for layers. While processing the 
+		 * vertices in the current layer and adding their neighbors to the queue
+		 * we update the nextLayerCount variable so that we know exactly how many 
+		 * vertices there are in the next layer. We also decrease the currentLayerCount
+		 * by one when processing the current layer. When this count reaches zero,
+		 * we know that the current layer is finished and the next layer will be 
+		 * processed now. This means that we can make the "next" layer into the 
+		 * "current" one and also this will be the correct time to update i.
+		 * If we find a vertex v_i which satisfies the condition indegree(v_i)==max(indegree)
+		 * and indegree(v_i) <= x+i, we let v_k := v_i and thus we have found a valid path.
+		 * 
+		 */
+		int currentLayerCount = 1; //Current layer, used to update i when needed
+		int nextLayerCount = 0; //Next layer
 		int i=0;
 		while (!q.isEmpty()) {
 			int v_i = q.poll();
@@ -280,11 +294,11 @@ public class Graph {
 			}
 			
 			//Update queue and count for layer 1
-			layer1Count+=neighbours.get(v_i).size(); //size-1 if has self-loop
+			nextLayerCount+=neighbours.get(v_i).size(); //size-1 if has self-loop
 			if (!selfLoop(v_i)) {
 				q.addAll(neighbours.get(v_i));
 			} else {
-				layer1Count--;
+				nextLayerCount--;
 				for (int neighbour : neighbours.get(v_i)) { //Optimize
 					if (neighbour != v_i) {
 						q.add(neighbour);
@@ -293,11 +307,11 @@ public class Graph {
 			}
 			
 			//Done with this vertex in this layer
-			layer0Count--;
-			if (layer0Count==0) {
-				layer0Count = layer1Count; //Update current layer
+			currentLayerCount--;
+			if (currentLayerCount==0) {
+				currentLayerCount = nextLayerCount; //Update current layer
 				i++; // We move on to the next layer, i increases
-				layer1Count = 0; // Next layer has no vertices atm
+				nextLayerCount = 0; // Next layer has no vertices atm
 			}
 		}
 		
