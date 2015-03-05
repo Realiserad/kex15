@@ -40,17 +40,35 @@ public class BruteForceSolver implements Solver {
 		for (int p = 1; p <= n; p++) { //Pursuers
 			for (int len = 1; len <= 2*n; len++) { //Length of solution
 				solution = new int[len][p];
-				//TODO work in progress, how to enumerate all possibilities?
-				// The stupid solution is to create all possible matrices
-				// M[len][p] (each element in the matrix is a value 1 to n and
-				// there are len*p values. The matrices are processed up to 2*n times which
-				// means we have a total of (at most) 2n^(len*p+1) matrices to check
-//				for (int pursuer = 0; pursuer < p; pursuer++) {
-//					
-//				}
+				if (solveR(1,0,p,len,solution)) return solution;
 			}
 		}
 		
 		return null;
 	}
+	
+	/**
+	 * 
+	 * @param day
+	 * @param pursuer
+	 * @param p
+	 * @param len
+	 * @return
+	 */
+	private boolean solveR(int day, int pursuer, int p, int len, int[][] sol) {
+		if (day == len-1 && pursuer == p) {
+			int n = graph.getVertexCount();
+			for (int i = pursuer; i<n; i++) {
+				sol[day][pursuer] = i;
+				if (verifier.verify(p, len, sol)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		//TODO
+		return false;		
+	}
+	
 }
