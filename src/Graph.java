@@ -223,7 +223,7 @@ public class Graph {
 			 */
 			@Override
 			public int compare(Integer a, Integer b) {
-				return Integer.compare(indegree[a],indegree[b]);
+				return indegree[a]-indegree[b];
 			}
 		});
 		
