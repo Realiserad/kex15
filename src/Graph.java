@@ -9,6 +9,7 @@ import java.util.LinkedList;
  * with vertices and edges.
  *
  * @author Realiserad
+ * @author Edvin Lundberg
  */
 public class Graph {
 	private ArrayList<LinkedList<Integer>> neighbours;
@@ -140,14 +141,9 @@ public class Graph {
 	 * Return the cycle in a path.
 	 */
 	private LinkedList<Integer> extractCycle(LinkedList<Integer> path) {
-		/*
-		 * I propose an alternative implementation:
-		 * 	Go backwards in the path and add vertices to cycle until reaching the tail/head.
-		 * 	This way no unnecessary vertices are processed.  
-		 */
 		int tail = path.removeLast(); // The cycle should end in this vertex
 		LinkedList<Integer> cycle = new LinkedList<Integer>();
-		Iterator<Integer> it = path.descendingIterator(); //iterator in reverse order
+		Iterator<Integer> it = path.descendingIterator(); // Iterator in reverse order
 		while (it.hasNext()) {
 			int vertex = it.next();
 			cycle.add(vertex);
