@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 /**
@@ -11,7 +13,9 @@ import java.util.StringTokenizer;
  * directed graph G consisting of one component, and a set of solution vectors describing the
  * movement of the pursuers.
  * 
- * The solution to be checked is read from stdin and the program answers YES or NO to stdout.
+ * The solution to be checked is read from stdin and the program answers YES or NO to stdout
+ * followed by the states produced in sequence by the solution vectors.
+ * 
  * 
  * Input format: 
  * Row					Data
@@ -78,16 +82,28 @@ public class Verify {
 			}
 		}
 		
+		/* Save the states for debugging, i.e. can check by hand */
+		List<int[]> states = new LinkedList<int[]>();
 		/* Verify solution by iterating the formula s_{n+1}=graph*s_{n}+seed with s_{0} = 0 */
 		int[] s = expand(seed[0], ROWS); // s_{1}
+		states.add(s);
 		for (int i = 1; i < LEN; i++) {
 			s = radd(rmul(graph, s, w), expand(seed[i], ROWS));
+			states.add(s);
 		}
 		
 		if (onesOnly(s)) {
-			System.out.println("YES");
+			io.println("YES");
 		} else {
-			System.out.println("NO");
+			io.println("NO");
+		}
+		/* Print states */
+		for (int i = 0; i < states.size(); i++) {
+			io.println("State "+(i+1)+":    ");
+			int[] state = states.get(i);
+			for (int j = 0; j < state.length; j++) {
+				io.print(state[j] + " ");
+			}
 		}
 		
 		io.close();
