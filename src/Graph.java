@@ -4,6 +4,8 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * An immutable representation of a directed graph 
@@ -71,6 +73,42 @@ public class Graph {
 		g = new Graph(m5);
 		System.out.println("Cycles: " + g.getCycles().toString());
 		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
+		System.out.println("-----------");
+		int[][] m6 = {
+				{0,1,0,0,0},
+				{0,0,1,0,0},
+				{1,0,0,0,0},
+				{0,0,1,0,1},
+				{0,0,0,1,0},
+		};
+		g = new Graph(m6);
+		for (List<Integer> ll : g.getStrongComponents()) {
+			System.out.println(ll.toString());
+		}
+		System.out.println("-----------");
+		int[][] m7 = {
+				{0,1,0,0},
+				{1,0,1,0},
+				{0,1,1,1},
+				{0,0,1,1},
+		};
+		g = new Graph(m7);
+		for (List<Integer> ll : g.getStrongComponents()) {
+			System.out.println(ll.toString());
+		}
+		
+		System.out.println("-----------");
+		int[][] m8 = {
+				{1,0,0,0,0},
+				{1,1,0,0,0},
+				{0,1,1,1,0},
+				{0,0,1,0,0},
+				{0,0,1,1,1},
+		};
+		g = new Graph(m8);
+		for (List<Integer> ll : g.getStrongComponents()) {
+			System.out.println(ll.toString());
+		}
 	}
 	
 	@SuppressWarnings("unused")
@@ -337,5 +375,109 @@ public class Graph {
 	 */
 	private boolean selfLoop(int vertex) {
 		return m[vertex][vertex] == 1;
+	}
+	
+	/**
+	 * Returns a list of maximal strong components for this graph. The list is sorted in the
+	 * order in which the components needs to be decontaminated.
+	 * @return
+	 * TODO returnvalue should be List<Graph>
+	 */
+	public List<Integer>[] getStrongComponents() {
+		List<Graph> subgraphs = new LinkedList<Graph>();
+		/* comp[v] describes the component that v belongs to, and zero if v belongs to no component so far */
+		int[] comp = new int[getVertexCount()]; 
+
+		// Number of strongly connected components in graph
+		int numComponents = 0;
+		
+		for (int v = 0; v < comp.length; v++) {
+			// If already in component, skip it
+			if (comp[v]!=0) continue;
+			
+			numComponents++;
+			int compNumber = numComponents; //+1 to avoid confusion with "zero value= no component"
+			// Our component consists of v so far, try to expand 
+			comp[v] = compNumber;
+			buildStrongComponent(v, new boolean[comp.length], new LinkedList<Integer>(), comp, compNumber);
+		}
+		
+		/* Topological ordering */
+		// One set for each component
+		@SuppressWarnings("unchecked")
+		List<Integer>[] comps = new LinkedList[numComponents];
+		for (int i = 0; i < comps.length; i++) {
+			comps[i] = new LinkedList<Integer>();
+		}
+		for (int v = 0; v < comp.length; v++) {
+			// Add v to the component it belongs to
+			comps[comp[v]-1].add(v);
+		}
+		
+		
+		//TODO bastian fixar när han käkat, skapa subgraphs
+		
+		return comps;
+	}
+	
+	/**
+	 * Build the strong component which "vertex" belongs to. In a strong component, there is a path connecting all pairs 
+	 * of vertices in the component. 
+	 * 
+	 * @param visited The visited vertices.
+	 * @param path The path travelled so far.
+	 * @param comp comp[v]=the compNumber that v belongs to, 0 if not belonging to any component. Will be mutated.
+	 * @param compNumber The component number of this component.
+	 */
+	private void buildStrongComponent(int vertex, boolean[] visited, LinkedList<Integer> path, int[] comp, int compNumber) {
+		//Variant of dfs
+		
+		if (visited[vertex]) {
+			// I was already here yo
+			return;
+		}
+		
+		visited[vertex] = true;
+		path.addLast(vertex);
+		
+		// If returning to an "accepted" vertex, mark this path as "accepted", i.e. belonging to this component  
+		for (int neighbour : neighbours.get(vertex)) {
+			if (comp[neighbour] == compNumber) {
+				markPath(comp, compNumber, path);
+				break;
+			}
+		}
+		
+		// Expand component further
+		for (int neighbour : neighbours.get(vertex)) {
+			if (comp[neighbour] != 0) {
+				// No need to search another component (we will never return to this component if we do)
+				// No need to check vertices already in this component
+				continue;
+			}
+			// Expand
+			buildStrongComponent(neighbour, visited, path, comp, compNumber);
+		}
+		
+		path.removeLast();
+	}
+
+	/**
+	 * Mark the vertices in given path as belonging to the component with the compNumber 
+	 * given as the second parameter. 
+	 * 
+	 * @param comp This parameter will be mutated, vertices on their index will have value compNumber.
+	 * @param compNumber The component number of this component
+	 * @param path Path of vertices which has been proven to belong to this component.
+	 */
+	private void markPath(int[] comp, int compNumber, LinkedList<Integer> path) {
+		Iterator<Integer> it = path.descendingIterator();
+		while (it.hasNext()) {
+			int v = it.next();
+			if (comp[v] == compNumber) {
+				return;
+			}
+			comp[v] = compNumber;
+		}
 	}
 }
