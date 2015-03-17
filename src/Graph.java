@@ -421,6 +421,29 @@ public class Graph {
 	}
 	
 	/**
+	 * Returns a subgraph of this graph induced by the vertices given
+	 * as argument. To be more specific, returns a graph (V, E) such that
+	 * V=vertices and E=(u, v) where u,v ∈ vertices.
+	 * @param vertices the vertices of this subgraph
+	 * @return A subgraph of this graph
+	 */
+	private Graph getSubgraph(List<Integer> vertices) {
+		HashSet<Integer> set = new HashSet<Integer>(vertices);
+		// matrix[x][y]=1 if there is an edge y->x
+		int[][] matrix = new int[vertices.size()][vertices.size()];
+		
+		for (int vertex : vertices) {
+			for (int neighbour : neighbours.get(vertex)) {
+				if (set.contains(neighbour)) {
+					// The subgraph contains an edge vertex->neighbour
+					matrix[neighbour][vertex]=1;
+				}
+			}
+		}
+		return new Graph(matrix);
+	}
+	
+	/**
 	 * Build the strong component which "vertex" belongs to. In a strong component, there is a path connecting all pairs 
 	 * of vertices in the component. 
 	 * 
