@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * An immutable representation of a directed graph 
@@ -19,7 +18,7 @@ public class Graph {
 	private int[][] m;
 	private int vertexCount, edgeCount;
 	private int lowerBoundPursuers;
-	
+
 	public static void main(String[] args) {
 		// Cycles {0, 1, 2, 3}, {0, 3}, {2}
 		int[][] m1 = {
@@ -96,7 +95,7 @@ public class Graph {
 		for (Graph component : g.getStrongComponents()) {
 			System.out.println(component.toString());
 		}
-		
+
 		System.out.println("-----------");
 		int[][] m8 = {
 				{1,0,0,0,0},
@@ -110,12 +109,7 @@ public class Graph {
 			System.out.println(component.toString());
 		}
 	}
-	
-	@SuppressWarnings("unused")
-	private Graph() {
-		/* This constructor is not available */
-	}
-	
+
 	/**
 	 * Create a graph from a neighbour matrix "m".
 	 * The matrix given as first argument should contain
@@ -145,7 +139,7 @@ public class Graph {
 			}
 		}
 	}
-	
+
 	/**
 	 * Get the adjacency matrix. The matrix will contain
 	 * a one on position m[i][j] if there is an edge j->i
@@ -155,21 +149,21 @@ public class Graph {
 	public int[][] getAdjacencyMatrix() {
 		return m;
 	}
-	
+
 	/**
 	 * Get the number of vertices for this graph.
 	 */
 	public int getVertexCount() {
 		return vertexCount;
 	}
-	
+
 	/**
 	 * Get the number of edges in this graph.
 	 */
 	public int getEdgeCount() {
 		return edgeCount;
 	}
-	
+
 	/**
 	 * Get all cycles in this graph.
 	 */
@@ -195,7 +189,7 @@ public class Graph {
 		}
 		return cycles;
 	}
-	
+
 	private void dfs(int previous, int current, boolean[] visited, boolean[] traversed, LinkedList<Integer> path, ArrayList<LinkedList<Integer>> cycles) {
 		// Mark the edge which lead here as traversed
 		traversed[previous*vertexCount+current] = true;
@@ -214,7 +208,7 @@ public class Graph {
 		visited[current] = false;
 		path.removeLast();
 	}
-	
+
 	/**
 	 * Return the cycle in a path.
 	 */
@@ -232,7 +226,7 @@ public class Graph {
 
 		return null;
 	}
-	
+
 	/**
 	 * Intersect two lists and return the result as a set, i.e return a set
 	 * containing the element which resides in both lists.
@@ -243,7 +237,7 @@ public class Graph {
 		s1.retainAll(s2);
 		return s1;
 	}
-	
+
 	/**
 	 * Use the "Edvin-conjecture" to calculate a lower bound for the minimum number of pursuers needed. 
 	 * @return A lower bound for the number of pursuers needed.
@@ -253,7 +247,7 @@ public class Graph {
 		if (this.lowerBoundPursuers != 0) {
 			return this.lowerBoundPursuers;
 		}
-		
+
 		/* Recall that:
 		 * The matrix given as first argument should contain
 		 * a one on position m[i][j] if there is an edge j->i
@@ -266,13 +260,13 @@ public class Graph {
 				indegree[r] += m[r][c];
 			}
 		}
-		
+
 		// Array of vertices which we will sort based on in-degree 
 		Integer[] vertices = new Integer[vertexCount];
 		for (int i = 0; i<vertices.length; i++) {
 			vertices[i] = i;
 		}
-		
+
 		// Sort vertices in ascending order of in-degree
 		Arrays.sort(vertices, new Comparator<Integer>() {
 			/**
@@ -286,7 +280,7 @@ public class Graph {
 				return indegree[a]-indegree[b];
 			}
 		});
-		
+
 		/*
 		 * Now the vertices array should be sorted on indegree and we traverse it from 
 		 * left to right. We process the vertices until one satisfies this condition:
@@ -309,7 +303,7 @@ public class Graph {
 				break;
 			}
 		}
-		
+
 		return this.lowerBoundPursuers;
 	}
 
@@ -333,7 +327,7 @@ public class Graph {
 		Arrays.fill(visited, false);
 		return dfsConjecture(v_0,x,0,maxInDegree, visited, indegree);
 	}
-	
+
 	/**
 	 * If a valid path could be found from here, pathFound will be true. 
 	 * 
@@ -349,34 +343,34 @@ public class Graph {
 	private boolean dfsConjecture(int v_i, int x, int i, int maxInDegree, boolean[] visited, final int[] indegree)  {
 		// Not valid path
 		if (!(indegree[v_i] <= x+i)) return false;
-		
+
 		// Found valid path
 		if (indegree[v_i] == maxInDegree) {
 			return true;
 		}
-		
+
 		// Continue search for valid path
 		visited[v_i] = true;
-		
+
 		for (int neighbor : neighbours.get(v_i)) {
 			if (!visited[neighbor]) {
 				boolean hasValidPath = dfsConjecture(neighbor, x, i+1, maxInDegree, visited, indegree);
 				if (hasValidPath) return true;
 			}
 		}
-		
+
 		/* When leaving a vertex, consider it unvisited */
 		visited[v_i] = false;
 		return false;
 	}
-	
+
 	/**
 	 * @return True iff the vertex has a self-loop
 	 */
 	private boolean selfLoop(int vertex) {
 		return m[vertex][vertex] == 1;
 	}
-	
+
 	/**
 	 * Returns a list of maximal strong components for this graph. The list is sorted in the
 	 * order in which the components needs to be decontaminated.
@@ -388,18 +382,18 @@ public class Graph {
 
 		// Number of strongly connected components in graph
 		int numComponents = 0;
-		
+
 		for (int v = 0; v < comp.length; v++) {
 			// If already in component, skip it
 			if (comp[v]!=0) continue;
-			
+
 			numComponents++;
 			int compNumber = numComponents; //+1 to avoid confusion with "zero value= no component"
 			// Our component consists of v so far, try to expand 
 			comp[v] = compNumber;
 			buildStrongComponent(v, new boolean[comp.length], new LinkedList<Integer>(), comp, compNumber);
 		}
-		
+
 		/* Topological ordering */
 		// One set for each component
 		@SuppressWarnings("unchecked")
@@ -411,39 +405,95 @@ public class Graph {
 			// Add v to the component it belongs to
 			comps[comp[v]-1].add(v);
 		}
-		
+
 		/* Create subgraphs from the components above */
-		Graph[] subgraphs = new Graph[comp.length];
-		for (int i = 0; i < comps.length; i++) subgraphs[i]=getSubgraph(comps[i]);
-		
-		
-		// TODO Sort me :)
-		return subgraphs;
+		return getSubgraphs(comps);
 	}
-	
+
 	/**
-	 * Returns a subgraph of this graph induced by the vertices given
-	 * as argument. To be more specific, returns a graph (V, E) such that
-	 * V=vertices and E=(u, v) where u,v ∈ vertices.
-	 * @param vertices the vertices of this subgraph
-	 * @return A subgraph of this graph
+	 * Returns an array of subgraphs sorted in topological order.
+	 * Each subgraph is created from a partition of vertices from this
+	 * graph. More formally, if V(X) is the vertex set given from one of the
+	 * partitions X given as argument, then the subgraph (V, E) is a graph such 
+	 * that V=V(X) and E=(u,v) where u,v ∈ V(X).
+	 * @param A partioning of this graph
+	 * @return A list of subgraphs sorted in topological order
 	 */
-	private Graph getSubgraph(List<Integer> vertices) {
-		HashSet<Integer> set = new HashSet<Integer>(vertices);
-		// matrix[x][y]=1 if there is an edge y->x
-		int[][] matrix = new int[vertices.size()][vertices.size()];
-		
-		for (int vertex : vertices) {
-			for (int neighbour : neighbours.get(vertex)) {
-				if (set.contains(neighbour)) {
-					// The subgraph contains an edge vertex->neighbour
-					matrix[neighbour][vertex]=1;
+	private Graph[] getSubgraphs(List<Integer>[] partitions) {
+		// The number of partitions, equal to the number of subgraphs
+		int partitionCount = partitions.length;
+		// A queue of subgraphs, will be sorted later
+		ArrayList<Graph> subgraphs = new ArrayList<Graph>(partitionCount);
+		// Create a set representation of each partition for O(1) lookup and removal
+		ArrayList<HashSet<Integer>> partitionSets = new ArrayList<HashSet<Integer>>();
+		for (int i = 0; i < partitionCount; i++) partitionSets.add(new HashSet<Integer>(partitions[i]));
+
+		// Neighbour list for a DAG representing the topological order for the subgraphs.
+		// Each vertex in this graph is a partition and an edge means that the partitions
+		// have a common element.
+		// topologicalOrder.get(u).contains(v) is true if exists an edge v->u, i.e if
+		// the partition v supercedes the partition u in the topological ordering.
+		ArrayList<HashSet<Integer>> topologicalOrder = new ArrayList<HashSet<Integer>>();
+		for (int i = 0; i < partitionCount; i++) topologicalOrder.add(new HashSet<Integer>());
+
+		for (int i = 0; i < partitionCount; i++) {
+			HashSet<Integer> currentSet = partitionSets.get(i);
+			List<Integer> currentPartition = partitions[i];
+
+			// matrix[u][v]=1 if there is an edge v->u
+			int[][] matrix = new int[this.getVertexCount()][this.getVertexCount()];
+
+			for (int vertex : currentPartition) {
+				for (int neighbour : neighbours.get(vertex)) {
+					if (currentSet.contains(neighbour)) {
+						// The subgraph we're building should contain an edge vertex->neighbour
+						matrix[neighbour][vertex]=1;
+					} else {
+						// The partition i has a common element with the partition in which
+						// the neighbour resides
+						topologicalOrder.get(getComponent(neighbour, partitionSets)).add(i);
+					}
 				}
 			}
+			subgraphs.add(new Graph(matrix));
 		}
-		return new Graph(matrix);
+
+		// The vector of subgraphs sorted in topological order
+		Graph[] sorted = new Graph[partitionCount];
+		int next = -1;
+		boolean[] selected = new boolean[partitionCount];
+		while (true) {
+			for (int i = 0; i < partitionCount; i++) {
+				if (topologicalOrder.get(i).isEmpty() && !selected[i]) {
+					// This subgraph has no incoming edges, place it into the next available bucket
+					sorted[++next]=subgraphs.get(i);
+					selected[i] = true;
+					// Remove all edges originating from vertex i
+					for (HashSet<Integer> set : topologicalOrder) set.remove(i);
+				}
+			}
+			// No subgraph left to process
+			break;
+		}
+		
+		// Assert all subgraphs has a topological order
+		assert(next==partitionCount-1);
+		
+		return sorted;
 	}
-	
+
+	/**
+	 * Returns the the index of the strong component which contains the 
+	 * vertex given as first argument.
+	 * @return The index of the strong component or -1 if the vertex does not exist
+	 */
+	private Integer getComponent(int vertex, ArrayList<HashSet<Integer>> sets) {
+		for (int i = 0; i < sets.size(); i++) {
+			if (sets.get(i).contains(vertex)) return i;
+		}
+		return -1;
+	}
+
 	/**
 	 * Build the strong component which "vertex" belongs to. In a strong component, there is a path connecting all pairs 
 	 * of vertices in the component. 
@@ -455,15 +505,15 @@ public class Graph {
 	 */
 	private void buildStrongComponent(int vertex, boolean[] visited, LinkedList<Integer> path, int[] comp, int compNumber) {
 		//Variant of dfs
-		
+
 		if (visited[vertex]) {
 			// I was already here yo
 			return;
 		}
-		
+
 		visited[vertex] = true;
 		path.addLast(vertex);
-		
+
 		// If returning to an "accepted" vertex, mark this path as "accepted", i.e. belonging to this component  
 		for (int neighbour : neighbours.get(vertex)) {
 			if (comp[neighbour] == compNumber) {
@@ -471,7 +521,7 @@ public class Graph {
 				break;
 			}
 		}
-		
+
 		// Expand component further
 		for (int neighbour : neighbours.get(vertex)) {
 			if (comp[neighbour] != 0) {
@@ -482,7 +532,7 @@ public class Graph {
 			// Expand
 			buildStrongComponent(neighbour, visited, path, comp, compNumber);
 		}
-		
+
 		path.removeLast();
 	}
 
@@ -504,9 +554,17 @@ public class Graph {
 			comp[v] = compNumber;
 		}
 	}
-	
+
 	@Override
 	public String toString() {
-		return this.neighbours.toString();
+		StringBuilder sb = new StringBuilder();
+		sb.append("[graph] Vertices: " + this.getVertexCount() + " Edges: " + this.getEdgeCount() + "\n");
+		for (int i = 0; i < neighbours.size(); i++) {
+			if (neighbours.get(i).isEmpty()) continue;
+			for (int neighbour : neighbours.get(i)) {
+				sb.append((i+1) + " --> " + (neighbour+1) + "\n");
+			}
+		}
+		return sb.toString();
 	}
 }
