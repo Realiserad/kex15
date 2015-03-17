@@ -82,8 +82,8 @@ public class Graph {
 				{0,0,0,1,0},
 		};
 		g = new Graph(m6);
-		for (List<Integer> ll : g.getStrongComponents()) {
-			System.out.println(ll.toString());
+		for (Graph component : g.getStrongComponents()) {
+			System.out.println(component.toString());
 		}
 		System.out.println("-----------");
 		int[][] m7 = {
@@ -93,8 +93,8 @@ public class Graph {
 				{0,0,1,1},
 		};
 		g = new Graph(m7);
-		for (List<Integer> ll : g.getStrongComponents()) {
-			System.out.println(ll.toString());
+		for (Graph component : g.getStrongComponents()) {
+			System.out.println(component.toString());
 		}
 		
 		System.out.println("-----------");
@@ -106,8 +106,8 @@ public class Graph {
 				{0,0,1,1,1},
 		};
 		g = new Graph(m8);
-		for (List<Integer> ll : g.getStrongComponents()) {
-			System.out.println(ll.toString());
+		for (Graph component : g.getStrongComponents()) {
+			System.out.println(component.toString());
 		}
 	}
 	
@@ -380,11 +380,9 @@ public class Graph {
 	/**
 	 * Returns a list of maximal strong components for this graph. The list is sorted in the
 	 * order in which the components needs to be decontaminated.
-	 * @return
-	 * TODO returnvalue should be List<Graph>
+	 * @return A vector of strongly connected components
 	 */
-	public List<Integer>[] getStrongComponents() {
-		List<Graph> subgraphs = new LinkedList<Graph>();
+	public Graph[] getStrongComponents() {
 		/* comp[v] describes the component that v belongs to, and zero if v belongs to no component so far */
 		int[] comp = new int[getVertexCount()]; 
 
@@ -414,10 +412,13 @@ public class Graph {
 			comps[comp[v]-1].add(v);
 		}
 		
+		/* Create subgraphs from the components above */
+		Graph[] subgraphs = new Graph[comp.length];
+		for (int i = 0; i < comps.length; i++) subgraphs[i]=getSubgraph(comps[i]);
 		
-		//TODO bastian fixar när han käkat, skapa subgraphs
 		
-		return comps;
+		// TODO Sort me :)
+		return subgraphs;
 	}
 	
 	/**
@@ -502,5 +503,10 @@ public class Graph {
 			}
 			comp[v] = compNumber;
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return this.neighbours.toString();
 	}
 }
