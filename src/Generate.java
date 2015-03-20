@@ -9,20 +9,26 @@ import java.util.Random;
  * The graph generated will be represented with a binary neighbour matrix M,
  * where M[i][j]=1 means that there is an edge j->i.
  * 
- * Usage: java Generate [options]
- * option										default
- * --batch N : Create N random graphs			no batch (N=1)	
- * --nodes X Y : Graphs created will have at    X=4 and Y=1000
- *   least X nodes and at most Y nodes.
- * --rand P : A number between 1 and 100.		P=100
- *   1 means cyclic and 100 means completely 
- *   random.
- * --file Output test files to disk.			stdout
- *   The test files will be named
- *   test01, test02... testN and stored in
- *   the current directory.
+ * -------------------------------------------------------------------------|
+ * Usage: java Generate [options]                                           |
+ * -------------------------------------------------------------------------|
+ * option									       |	default             |
+ * --batch N : Create N random graphs		       |	no batch (N=1)	    |
+ * --nodes X Y : Graphs created will have at       |    X=4 and Y=1000      |
+ *   least X nodes and at most Y nodes.            |                        |
+ * --rand P : A number between 1 and 100.	       |	P=100               |
+ *   1 means cyclic and 100 means completely       |                        |
+ *   random.                                       |                        |
+ * --file Output test files to disk.		       |	stdout              |
+ *   The test files will be named                  |                        |
+ *   test01, test02... testN and stored in         |                        |
+ *   the current directory.                        |                        |
+ * --edge Output graph as an edge representation   |                        |
+ *   instead of a matrix representation. Vertices  |                        |
+ *   will be numbered from 0 to N-1.               |                        |
+ * -------------------------------------------------------------------------|
  *
- * @author Realiserad
+ * @author Bastian Fredriksson
  */
 public class Generate {
 	private class Edge {
@@ -32,11 +38,13 @@ public class Generate {
 			this.b = b;
 		}
 	}
+	
 	private static int batch = 1;
 	private static int nodeLower = 4;
 	private static int nodeUpper = 1000;
 	private static int rand = 100;
 	private static boolean file = false;
+	private static boolean asEdges = false;
 	private ArrayList<Edge> edges;
 	
 	public static void main(String[] args) {
@@ -54,6 +62,11 @@ public class Generate {
 				i++;
 			} else if (args[i].equals("--file")) {
 				file = true;
+			} else if (args[i].equals("--edge")) {
+				asEdges = true;
+			} else {
+				System.err.println("Unknown flag " + args[i]);
+				System.exit(0);
 			}
 		}
 		if (nodeLower < 4) {
@@ -102,9 +115,9 @@ public class Generate {
 			}
 			// Print result
 			if (!file) {
-				printMatrix(m);
+				printGraph(m);
 			} else {
-				storeMatrix(m, "test" + i+1);
+				storeGraph(m, "test" + i+1);
 			}
 		}
 	}
@@ -112,22 +125,40 @@ public class Generate {
 	/**
 	 * Store the matrix m in a file.
 	 */
-	private void storeMatrix(int[][] m, String file) {
+	private void storeGraph(int[][] m, String file) {
 		PrintWriter writer;
 		try {
 			writer = new PrintWriter(file, "UTF-8");
-			writer.println(matrixString(m));
+			if (asEdges) writer.print(matrixString(m));
+			else writer.print(edgeString(m));
 			writer.close();
 		} catch (Exception e) {
 			System.err.println(e.getMessage());
 		}
 	}
 	
+	private String edgeString(int[][] m) {
+		StringBuilder sb = new StringBuilder();
+		for (int col = 0; col < m.length; col++) {
+			for (int row = 0; row < m.length; row++) {
+				if (m[row][col]==1) {
+					// Edge col->row
+					sb.append(col + " " + row + "\n");
+				}
+			}
+		}
+		return sb.toString();
+	}
+
 	/**
 	 * Print the matrix m to stdout.
 	 */
-	private void printMatrix(int[][] m) {
-		System.out.print(matrixString(m));
+	private void printGraph(int[][] m) {
+		if (asEdges) {
+			System.out.print(edgeString(m));
+		} else {
+			System.out.print(matrixString(m));
+		}
 	}
 	
 	/**

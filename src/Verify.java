@@ -1,31 +1,32 @@
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.StringTokenizer;
 
 /**
  * Verify a solution to The Monk problem using an EL-system. The solution should contain a
  * directed graph G consisting of one component, and a set of solution vectors describing the
  * movement of the pursuers.
  * 
- * The solution to be checked is read from stdin and the program answers YES or NO to stdout
- * followed by the states produced in sequence by the solution vectors.
+ * The program can either be used as a standalone component by piping in a solution via stdin
+ * (see sample below) or as a helper class by using the constructor which takes a graph as
+ * parameter. 
  * 
+ * The solution to be checked is read from stdin (if used as a standalone component) and the 
+ * program answers YES or NO to stdout followed by the internal state for each iteration.
+ * Each state consists of a bitvector with as many bits as there are vertices. The bitvector
+ * number i has a one on position p if vertex p is decontaminated at day i.
  * 
- * Input format: 
- * Row					Data
- * 0					Should contain the number of rows "r" in the neighbour matrix for G.
- * 1 to r				Should contain the data (separated by space) for the neighbour matrix.
- * r+1					Should contain two integers separated by space; the number of pursuers "p" 
- * 						and the length of a solution vector.
- * r+2 to r+2+p 		Should contain the movement of the pursuers (solution vectors for G).
- * 						The vertices of G are assumed to be labeled from 1 and up (see the
- * 						example below).
+ * -------------------------------------------------------------------------------------------------|
+ * Input format:                                                                                    |
+ * Row				|	Data                                                                        |
+ * -----------------|-------------------------------------------------------------------------------|
+ * 0				|	Should contain the number of rows "r" in the neighbour matrix for G.        |
+ * 1 to r			|	Should contain the data (separated by space) for the neighbour matrix.      |
+ * r+1				|	Should contain two integers separated by space; the number of pursuers "p"  |
+ * 					|	and the length of a solution vector.                                        |
+ * r+2 to r+2+p 	|	Should contain the movement of the pursuers (solution vectors for G).       |
+ * 					|	The vertices of G are assumed to be labeled from 1 and up (see the          |
+ * 					|	example below).                                                             |
+ * -------------------------------------------------------------------------------------------------|
  * 
  * Example:
  * 5
@@ -44,25 +45,26 @@ import java.util.StringTokenizer;
  * 
  * Run the verifier with javac Verify.java && cat solution.txt | java Verify
  * 
- * @author Realiserad
+ * @author Bastian Fredriksson
  */
 public class Verify {
-	private final int ROWS;
+	private int vertexCount;
 	private int[][] graph;
 	private int[] w;
 	
 	public static void main(String[] args) {
 		new Verify();
 	}
-
+	
 	/**
-	 * Constructor suitable for reading graph from System.in.
+	 * Read a neighbour matrix from stdin and answer YES or NO to stdout
+	 * followed by the internal state for each iteration.
 	 */
-	public Verify() {
+	private Verify() {
 		Kattio io = new Kattio(System.in);
 		
 		/* Read neighbour matrix */
-		ROWS = io.getInt();
+		final int ROWS = io.getInt();
 		graph = new int[ROWS][ROWS];
 		w = new int[ROWS];
 		for (int row = 0; row < ROWS; row++) {
@@ -82,8 +84,10 @@ public class Verify {
 			}
 		}
 		
-		/* Save the states for debugging, i.e. can check by hand */
+		/* Save states for debugging. A state consists of a bitvector with a one on position v
+		 * if vertex v is decontaminated. */
 		List<int[]> states = new LinkedList<int[]>();
+		
 		/* Verify solution by iterating the formula s_{n+1}=graph*s_{n}+seed with s_{0} = 0 */
 		int[] s = expand(seed[0], ROWS); // s_{1}
 		states.add(s);
@@ -92,47 +96,83 @@ public class Verify {
 			states.add(s);
 		}
 		
+		/* Print answer */
 		if (onesOnly(s)) {
 			io.println("YES");
 		} else {
 			io.println("NO");
 		}
+		
 		/* Print states */
+		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < states.size(); i++) {
-			io.println("State "+(i+1)+":    ");
+			sb.append((i+1) + padding(i+1));
 			int[] state = states.get(i);
 			for (int j = 0; j < state.length; j++) {
-				io.print(state[j] + " ");
+				sb.append(state[j] + " ");
 			}
+			sb.append("\n");
 		}
+		io.print(sb.toString());
 		
 		io.close();
 	}
 	
 	/**
-	 * This constructor is used for repeated verification of different solutions but on the same graph.
-	 * Suitable for brute-force solution.
-	 * @param g Graph, exception if null
+	 * Returns padding for an integer to smoothly align two columns
+	 * in a printout.
+	 * With (dynamic) padding:      Without padding
+	 * 1     text          			1     text
+	 * 11    text                   11     text
+	 * 242   text                   242      text
+	 * @return Padding string with spaces
+	 */
+	private String padding(int i) {
+		String tmp = String.valueOf(i);
+		StringBuilder padding = new StringBuilder();
+		for (int n = 0; n < 7-tmp.length(); n++) padding.append(' ');
+		return padding.toString();
+	}
+	
+	/**
+	 * Create a verifier for the graph given as argument.
+	 * Invoke verify() to check if a solution is valid for this graph.
 	 */
 	public Verify(Graph g) {
-		ROWS = g.getVertexCount();
-		graph = g.getAdjacencyMatrix();
-		w = new int[ROWS];
-		for (int row = 0; row < ROWS; row++) {
-			for (int col = 0; col < ROWS; col++) {
+		this.vertexCount = g.getVertexCount();
+		this.graph = g.getAdjacencyMatrix();
+		this.w = new int[vertexCount];
+		for (int row = 0; row < vertexCount; row++) {
+			for (int col = 0; col < vertexCount; col++) {
 				if (graph[row][col] == 1) w[row]++; // w[i] should contain Hamming weight for row i
 			}
 		}
 	}
 	
 	/**
-	 * 
+	 * Verify a solution to the Monk problem.
+	 * Movement of the pursuers are given as a len*p matrix
+	 * where row 0<=i<=len-1 contains the vertices which should 
+	 * be swept by the pursuers at day i. Vertices are numbered 
+	 * from 0 to n-1.
+	 * Example input:
+	 * p = 2;
+	 * len = 3;
+	 * seed = {
+	 *   { 1, 3 },
+	 *   { 0, 4 },
+	 *   { 3, 4 },
+	 * };
+	 * @param p The number of pursuers used to sweep this graph
+	 * @param len The number of days used to sweep this graph
+	 * @param seed The movements of the pursuers for each day
+	 * @return True if the solution is valid, false otherwise
 	 */
 	public boolean verify(int p, int len, int[][] seed) {
 		/* Verify solution by iterating the formula s_{n+1}=graph*s_{n}+seed with s_{0} = 0 */
-		int[] s = expand(seed[0], ROWS); // s_{1}
+		int[] s = expand(seed[0], vertexCount); // s_{1}
 		for (int i = 1; i < len; i++) {
-			s = radd(rmul(graph, s, w), expand(seed[i], ROWS));
+			s = radd(rmul(graph, s, w), expand(seed[i], vertexCount));
 		}
 		
 		return (onesOnly(s));

@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -10,7 +11,7 @@ import java.util.List;
  * An immutable representation of a directed graph 
  * with vertices and edges.
  *
- * @author Realiserad
+ * @author Bastian Fredriksson
  * @author Edvin Lundberg
  */
 public class Graph {
@@ -18,97 +19,6 @@ public class Graph {
 	private int[][] m;
 	private int vertexCount, edgeCount;
 	private int lowerBoundPursuers;
-
-	public static void main(String[] args) {
-		// Cycles {0, 1, 2, 3}, {0, 3}, {2}
-		int[][] m1 = {
-				{ 0, 0, 0, 1 },
-				{ 1, 0, 0, 0 },
-				{ 0, 1, 1, 0 },
-				{ 1, 0, 1, 0 },
-		};
-		Graph g = new Graph(m1);
-		System.out.println("Cycles: " + g.getCycles().toString());
-		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
-		// Cycles {0, 2, 4}, {1, 2, 3}, {0, 2, 1} {2, 3, 4}
-		int[][] m2 = {
-				{ 0, 1, 0, 0, 1 },
-				{ 0, 0, 1, 0, 0 },
-				{ 1, 0, 0, 1, 0 },
-				{ 0, 1, 0, 0, 1 },
-				{ 0, 0, 1, 0, 0 },
-		};
-		g = new Graph(m2);
-		System.out.println("Cycles: " + g.getCycles().toString());
-		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
-		// Cycles {0, 1, 2, 3}, {0, 1, 2, 4}, {4, 5}, {2}
-		int[][] m3 = {
-				{ 0, 0, 0, 1, 1, 0 },
-				{ 1, 0, 0, 0, 0, 0 },
-				{ 0, 1, 1, 0, 0, 0 },
-				{ 0, 0, 1, 0, 0, 0 },
-				{ 0, 0, 1, 0, 0, 1 },
-				{ 0, 0, 0, 0, 1, 0 },
-		};
-		g = new Graph(m3);
-		System.out.println("Cycles: " + g.getCycles().toString());
-		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
-		// Cycles {0,1,2,3,4}, {0,1}, {0,1,4}
-		int[][] m4 = {
-				{ 0, 1, 0, 0, 1 },
-				{ 1, 0, 0, 1, 0 },
-				{ 1, 0, 0, 0, 0 },
-				{ 0, 0, 1, 0, 0 },
-				{ 0, 1, 0, 0, 0 },
-		};
-		g = new Graph(m4);
-		System.out.println("Cycles: " + g.getCycles().toString());
-		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
-		int[][] m5 = {
-				{ 1, 0, 1},
-				{ 1, 1, 0},
-				{ 0, 1, 1},
-		};
-		g = new Graph(m5);
-		System.out.println("Cycles: " + g.getCycles().toString());
-		System.out.println("Conjecture: " + g.getLowerBoundNrOfPursuers());
-		System.out.println("-----------");
-		int[][] m6 = {
-				{0,1,0,0,0},
-				{0,0,1,0,0},
-				{1,0,0,0,0},
-				{0,0,1,0,1},
-				{0,0,0,1,0},
-		};
-		g = new Graph(m6);
-		for (Graph component : g.getStrongComponents()) {
-			System.out.println(component.toString());
-		}
-		System.out.println("-----------");
-		int[][] m7 = {
-				{0,1,0,0},
-				{1,0,1,0},
-				{0,1,1,1},
-				{0,0,1,1},
-		};
-		g = new Graph(m7);
-		for (Graph component : g.getStrongComponents()) {
-			System.out.println(component.toString());
-		}
-
-		System.out.println("-----------");
-		int[][] m8 = {
-				{1,0,0,0,0},
-				{1,1,0,0,0},
-				{0,1,1,1,0},
-				{0,0,1,0,0},
-				{0,0,1,1,1},
-		};
-		g = new Graph(m8);
-		for (Graph component : g.getStrongComponents()) {
-			System.out.println(component.toString());
-		}
-	}
 
 	/**
 	 * Create a graph from a neighbour matrix "m".
@@ -329,8 +239,7 @@ public class Graph {
 	}
 
 	/**
-	 * If a valid path could be found from here, pathFound will be true. 
-	 * 
+	 * If a valid path could be found from here, pathFound will be true.
 	 * 
 	 * @param v_i Current vertex 
 	 * @param x The indegree of v_0
@@ -365,6 +274,7 @@ public class Graph {
 	}
 
 	/**
+	 * Check if this vertex has an edge to itself.
 	 * @return True iff the vertex has a self-loop
 	 */
 	private boolean selfLoop(int vertex) {
@@ -504,8 +414,6 @@ public class Graph {
 	 * @param compNumber The component number of this component.
 	 */
 	private void buildStrongComponent(int vertex, boolean[] visited, LinkedList<Integer> path, int[] comp, int compNumber) {
-		//Variant of dfs
-
 		if (visited[vertex]) {
 			// I was already here yo
 			return;
@@ -554,14 +462,27 @@ public class Graph {
 			comp[v] = compNumber;
 		}
 	}
-
+	
+	/**
+	 * Returns the string representation of this graph
+	 * terminated by newline.
+	 * Each line in the string consists of an edge on
+	 * the form 
+	 * <code>u --> v</code>
+	 * The edges are sorted in ascending order, such
+	 * that the edge (u, v) precedes (x, y) if u<x or
+	 * if u=x and v<y.
+	 * Time complexity: O(|V|*|E|*log(|E|))
+	 * @return A string with all edges of this graph
+	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("[graph] Vertices: " + this.getVertexCount() + " Edges: " + this.getEdgeCount() + "\n");
 		for (int i = 0; i < neighbours.size(); i++) {
-			if (neighbours.get(i).isEmpty()) continue;
-			for (int neighbour : neighbours.get(i)) {
+			LinkedList<Integer> queue = neighbours.get(i);
+			if (queue.isEmpty()) continue;
+			Collections.sort(queue);
+			for (int neighbour : queue) {
 				sb.append((i+1) + " --> " + (neighbour+1) + "\n");
 			}
 		}
