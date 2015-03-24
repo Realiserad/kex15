@@ -15,10 +15,11 @@ import java.util.List;
  * @author Edvin Lundberg
  */
 public class Graph {
-	private ArrayList<LinkedList<Integer>> neighbours, backNeighbours;
+	private ArrayList<LinkedList<Integer>> neighbours;//, backNeighbours;
 	private int[][] m;
 	private int vertexCount, edgeCount;
 	private int lowerBoundPursuers;
+	private int upperBoundPursuers;
 
 	/**
 	 * Create a graph from a neighbour matrix "m".
@@ -32,10 +33,10 @@ public class Graph {
 		this.lowerBoundPursuers = 0; // Initial lower bound
 		/* Create neighbour list */
 		neighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
-		backNeighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
+		//backNeighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
 		for (int i=0; i<vertexCount; i++) {
 			neighbours.add(new LinkedList<Integer>());
-			backNeighbours.add(new LinkedList<Integer>());
+			//backNeighbours.add(new LinkedList<Integer>());
 		}
 		for (int row=0; row<m.length; row++) {
 			for (int col=0; col<m.length; col++) {
@@ -44,8 +45,27 @@ public class Graph {
 					neighbours.get(col).add(row);
 					edgeCount++;
 					// Add edge row->col
-					backNeighbours.get(row).add(col);
+					//backNeighbours.get(row).add(col);
 				}
+			}
+		}
+	}
+	
+	/**
+	 * Create a graph from a adjacency list "neighbours".
+	 * neighbours.get(i) should contain all neighbours to vertex i
+	 */
+	public Graph(ArrayList<LinkedList<Integer>> neighbours) {
+		this.neighbours = neighbours;
+		this.m = new int[neighbours.size()][neighbours.size()];
+		this.vertexCount = neighbours.size();
+		this.lowerBoundPursuers = 0;
+		/* Create neighbour matrix */
+		for (int i = 0; i < neighbours.size(); i++) {
+			LinkedList<Integer> list = neighbours.get(i);
+			for (int j : list) {
+				m[j][i] = 1;
+				edgeCount++;
 			}
 		}
 	}
@@ -215,6 +235,19 @@ public class Graph {
 		}
 
 		return this.lowerBoundPursuers;
+	}
+	
+	/** Return an upper bound for the number of pursuers needed */
+	public int getUpperBoundNrOfPursuers() {
+		if (upperBoundPursuers != 0) {
+			return upperBoundPursuers;
+		}
+		for (LinkedList<Integer> outdegree : neighbours) {
+			if (outdegree.size() > upperBoundPursuers) {
+				upperBoundPursuers = outdegree.size();
+			}
+		}
+		return upperBoundPursuers;
 	}
 
 	/**
