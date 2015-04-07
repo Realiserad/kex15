@@ -29,12 +29,28 @@ public class Graph {
 	 */
 	public Graph(int[][] m) {
 		this.m = m;
-		this.vertexCount = m.length;
+		
+		// FIXME Fix m.length vs vertexCount
+		
+		int null_cols = 0;
+		for (int y = 0; y < m.length; y++) {
+			int sum = 0;
+			for (int x = 0; x < m.length; x++) {
+				sum+=m[x][y];
+			}
+			if (sum == 0) {
+				null_cols++;
+			} else {
+				vertexCount++;
+			}
+		}
+		if (null_cols == m.length) vertexCount=1;
+		
 		this.lowerBoundPursuers = 0; // Initial lower bound
 		/* Create neighbour list */
-		neighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
+		neighbours = new ArrayList<LinkedList<Integer>>(m.length);
 		//backNeighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
-		for (int i=0; i<vertexCount; i++) {
+		for (int i=0; i<m.length; i++) {
 			neighbours.add(new LinkedList<Integer>());
 			//backNeighbours.add(new LinkedList<Integer>());
 		}
@@ -78,6 +94,13 @@ public class Graph {
 	 */
 	public int[][] getAdjacencyMatrix() {
 		return m;
+	}
+	
+	/**
+	 * Get the adjacency list.
+	 */
+	public ArrayList<LinkedList<Integer>> getAdjacencyList() {
+		return neighbours;
 	}
 
 	/**
@@ -186,7 +209,7 @@ public class Graph {
 			}
 		}
 		
-		return minIndegree;
+		return Math.max(1, minIndegree);
 	}
 
 	/**
@@ -205,7 +228,7 @@ public class Graph {
 		 * and zero otherwise.
 		 */
 		// Keep track of the in-degree of each vertex
-		final int[] indegree = new int[vertexCount];
+		final int[] indegree = new int[m.length];
 		for (int r = 0; r < m.length; r++) {
 			for (int c = 0; c < m.length; c++) {
 				indegree[r] += m[r][c];
@@ -255,7 +278,7 @@ public class Graph {
 			}
 		}
 
-		return this.lowerBoundPursuers;
+		return Math.max(1, this.lowerBoundPursuers);
 	}
 	
 	/** 
@@ -270,7 +293,7 @@ public class Graph {
 				upperBoundPursuers = outdegree.size();
 			}
 		}
-		return upperBoundPursuers;
+		return Math.max(1, upperBoundPursuers);
 	}
 
 	/**
@@ -533,6 +556,7 @@ public class Graph {
 	 */
 	@Override
 	public String toString() {
+		if (this.getEdgeCount() == 0) return "no edges\n";
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < neighbours.size(); i++) {
 			LinkedList<Integer> queue = neighbours.get(i);
