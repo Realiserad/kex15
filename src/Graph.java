@@ -167,12 +167,33 @@ public class Graph {
 		s1.retainAll(s2);
 		return s1;
 	}
-
+	
 	/**
-	 * Use the "Edvin-conjecture" to calculate a lower bound for the minimum number of pursuers needed. 
-	 * @return A lower bound for the number of pursuers needed.
+	 * 
+	 * @return A lower bound for the number of pursuers needed, it can't be done with less than returned value.
 	 */
 	public int getLowerBoundNrOfPursuers() {
+		//The minimum indegree is a lower bound because we must have that many pursuers to make any progress at all.
+		int minIndegree = vertexCount; // Initial high value
+		for (int i = 0; i<vertexCount; i++) {
+			int i_indegree = 0; 
+			for (int j = 0; j < vertexCount; j++) {
+				//m[i][j] will be 1 if edge j->i, and zero otherwise. Therefore we can sum it up.
+				i_indegree += m[i][j]; 
+			}
+			if (i_indegree < minIndegree) {
+				minIndegree = i_indegree;
+			}
+		}
+		
+		return minIndegree;
+	}
+
+	/**
+	 * Use the "Edvin-estimate" to calculate a lower bound for the minimum number of pursuers needed. 
+	 * @return A lower bound for the number of pursuers needed.
+	 */
+	public int getEstimateNrOfPursuers() {
 		// If already calculated lower bound, return it 
 		if (this.lowerBoundPursuers != 0) {
 			return this.lowerBoundPursuers;
@@ -228,7 +249,7 @@ public class Graph {
 		for (int i = 0; i<vertices.length; i++) {
 			int v_0 = vertices[i];
 			int x = indegree[v_0];
-			if (validConjecturePathExists(v_0, x, maxInDegree, indegree)) {
+			if (validEstimatePathExists(v_0, x, maxInDegree, indegree)) {
 				this.lowerBoundPursuers = x; //We need x pursuers to start by blocking v_0
 				break;
 			}
@@ -237,7 +258,9 @@ public class Graph {
 		return this.lowerBoundPursuers;
 	}
 	
-	/** Return an upper bound for the number of pursuers needed */
+	/** 
+	 * Return an upper bound for the number of pursuers needed 
+	 */
 	public int getUpperBoundNrOfPursuers() {
 		if (upperBoundPursuers != 0) {
 			return upperBoundPursuers;
@@ -251,7 +274,7 @@ public class Graph {
 	}
 
 	/**
-	 * Check if a valid conjecture path (of distinct vertices) exists which starts from v_0.
+	 * Check if a valid estimate path (of distinct vertices) exists which starts from v_0.
 	 * 
 	 * @param v_0 The vertex which the search starts from
 	 * @param x The indegree of v_0
@@ -262,13 +285,13 @@ public class Graph {
 	 * 		and 
 	 * 		indegree(v_k) == max(indegree).
 	 */
-	private boolean validConjecturePathExists(int v_0, int x, int maxInDegree, final int[] indegree) {		
+	private boolean validEstimatePathExists(int v_0, int x, int maxInDegree, final int[] indegree) {		
 		// Variant of dfs
 
 		// visited[v] is true if vertex v has been visited during current bfs
 		boolean[] visited = new boolean[vertexCount];
 		Arrays.fill(visited, false);
-		return dfsConjecture(v_0,x,0,maxInDegree, visited, indegree);
+		return dfsEstimate(v_0,x,0,maxInDegree, visited, indegree);
 	}
 
 	/**
@@ -282,7 +305,7 @@ public class Graph {
 	 * @param visited Keep track of which vertices are visited, cycles are not allowed for this path
 	 * @param indegree array of indegrees of vertices
 	 */
-	private boolean dfsConjecture(int v_i, int x, int i, int maxInDegree, boolean[] visited, final int[] indegree)  {
+	private boolean dfsEstimate(int v_i, int x, int i, int maxInDegree, boolean[] visited, final int[] indegree)  {
 		// Not valid path
 		if (!(indegree[v_i] <= x+i)) return false;
 
@@ -296,7 +319,7 @@ public class Graph {
 
 		for (int neighbor : neighbours.get(v_i)) {
 			if (!visited[neighbor]) {
-				boolean hasValidPath = dfsConjecture(neighbor, x, i+1, maxInDegree, visited, indegree);
+				boolean hasValidPath = dfsEstimate(neighbor, x, i+1, maxInDegree, visited, indegree);
 				if (hasValidPath) return true;
 			}
 		}
