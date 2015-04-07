@@ -293,4 +293,23 @@ public class UnitTest {
 			assertTrue(componentStrings.contains(strongComponent.toString()));
 		}
 	}
+	
+	@Test
+	public void testStrongComponents4() {
+		Graph g = new Graph(new int[][] {
+				{0,0,0},
+				{0,0,0},
+				{1,1,1},
+		});
+		Graph[] strongComponents = g.getStrongComponents();
+		List<String> componentStrings = Arrays.asList(new String[] {
+				"no edges\n",
+				"no edges\n",
+				"3 --> 3\n",
+		});
+		assertTrue(strongComponents.length==componentStrings.size());
+		for (Graph strongComponent : strongComponents) {
+			assertTrue(componentStrings.contains(strongComponent.toString()));
+		}
+	}
 }
