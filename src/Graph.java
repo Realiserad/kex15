@@ -554,7 +554,7 @@ public class Graph {
 			if (queue.isEmpty()) continue;
 			Collections.sort(queue);
 			for (int neighbour : queue) {
-				sb.append((i+1) + " --> " + (neighbour+1) + "\n");
+				sb.append((translate(i)+1) + " --> " + (translate(neighbour)+1) + "\n");
 			}
 		}
 		return sb.toString();

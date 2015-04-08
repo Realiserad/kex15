@@ -178,7 +178,7 @@ public class Solver {
 				for (int v : neighbours) {
 					newFreeEdges[v]--;
 				}
-				placements[pos] = i;
+				placements[pos] = g.translate(i);
 				LinkedList<int[]> result;
 				if (dynPursuers > 1) {
 					newState = state.clone();
