@@ -1,8 +1,6 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -67,7 +65,6 @@ public class Solver {
 		try {
 			io = new Kattio(new FileInputStream("/afs/nada.kth.se/home/o/u1h8xqho/Downloads/kex15/bin/test2.txt"), System.out);
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

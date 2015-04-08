@@ -15,8 +15,7 @@ import java.util.List;
  * @author Edvin Lundberg
  */
 public class Graph {
-	private ArrayList<LinkedList<Integer>> neighbours;//, backNeighbours;
-	private int[][] m;
+	private ArrayList<LinkedList<Integer>> neighbours;
 	private int vertexCount, edgeCount;
 	private int lowerBoundPursuers;
 	private int upperBoundPursuers;
@@ -28,31 +27,11 @@ public class Graph {
 	 * and zero otherwise.
 	 */
 	public Graph(int[][] m) {
-		this.m = m;
-		
-		// FIXME Fix m.length vs vertexCount
-		
-		int null_cols = 0;
-		for (int y = 0; y < m.length; y++) {
-			int sum = 0;
-			for (int x = 0; x < m.length; x++) {
-				sum+=m[x][y];
-			}
-			if (sum == 0) {
-				null_cols++;
-			} else {
-				vertexCount++;
-			}
-		}
-		if (null_cols == m.length) vertexCount=1;
-		
-		this.lowerBoundPursuers = 0; // Initial lower bound
 		/* Create neighbour list */
+		HashSet<Integer> vertices = new HashSet<Integer>((int)(m.length / 0.75 + 1));
 		neighbours = new ArrayList<LinkedList<Integer>>(m.length);
-		//backNeighbours = new ArrayList<LinkedList<Integer>>(vertexCount);
 		for (int i=0; i<m.length; i++) {
 			neighbours.add(new LinkedList<Integer>());
-			//backNeighbours.add(new LinkedList<Integer>());
 		}
 		for (int row=0; row<m.length; row++) {
 			for (int col=0; col<m.length; col++) {
@@ -60,11 +39,14 @@ public class Graph {
 					// Add edge col->row
 					neighbours.get(col).add(row);
 					edgeCount++;
-					// Add edge row->col
-					//backNeighbours.get(row).add(col);
+					vertices.add(col);
+					vertices.add(row);
 				}
 			}
 		}
+		
+		this.vertexCount = vertices.size() == 0 ? 1 : vertices.size();
+		this.lowerBoundPursuers = 0; // Initial lower bound
 	}
 	
 	/**
@@ -73,27 +55,8 @@ public class Graph {
 	 */
 	public Graph(ArrayList<LinkedList<Integer>> neighbours) {
 		this.neighbours = neighbours;
-		this.m = new int[neighbours.size()][neighbours.size()];
 		this.vertexCount = neighbours.size();
 		this.lowerBoundPursuers = 0;
-		/* Create neighbour matrix */
-		for (int i = 0; i < neighbours.size(); i++) {
-			LinkedList<Integer> list = neighbours.get(i);
-			for (int j : list) {
-				m[j][i] = 1;
-				edgeCount++;
-			}
-		}
-	}
-
-	/**
-	 * Get the adjacency matrix. The matrix will contain
-	 * a one on position m[i][j] if there is an edge j->i
-	 * and zero otherwise.
-	 * @return m Adjacency matrix
-	 */
-	public int[][] getAdjacencyMatrix() {
-		return m;
 	}
 	
 	/**
