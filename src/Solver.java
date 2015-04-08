@@ -63,7 +63,7 @@ public class Solver {
 	private LinkedList<LinkedList<int[]>> getSolution() {
 		Kattio io = null;
 		try {
-			io = new Kattio(new FileInputStream("/afs/nada.kth.se/home/o/u1h8xqho/Downloads/kex15/bin/test2.txt"), System.out);
+			io = new Kattio(new FileInputStream("/afs/nada.kth.se/home/o/u1h8xqho/Downloads/kex15/bin/star"), System.out);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -91,7 +91,15 @@ public class Solver {
 		LinkedList<LinkedList<int[]>> solutions = new LinkedList<LinkedList<int[]>>();
 		for (Graph component : queue) {
 			assert(solveComponent(component)!=null);
-			solutions.addLast(solveComponent(component));
+			if (component.isSingleton()) {
+				// Only one vertex to check
+				int[] simpleStrategy = new int[] { component.translate(0) };
+				LinkedList<int[]> ll = new LinkedList<int[]>();
+				ll.add(simpleStrategy);
+				solutions.add(ll);
+			} else {
+				solutions.addLast(solveComponent(component));
+			}
 		}
 
 		return solutions;
@@ -103,7 +111,7 @@ public class Solver {
 	 * @return
 	 */
 	private LinkedList<int[]> solveComponent(Graph component) {
-		int[] freeEdges = new int[component.getVertexCount()];
+		int[] freeEdges = component.getIndegree();
 		/* Determine bounds */
 		int lowerBound = component.getLowerBoundNrOfPursuers();
 		int upperBound = component.getUpperBoundNrOfPursuers();
@@ -112,7 +120,6 @@ public class Solver {
 		if (lowerBound == upperBound) upperBound++;
 		assert(p>0);
 		while (lowerBound < upperBound) {
-			System.err.println(p);
 			assert(p > 0);
 			nextSolution = getSolution(new VisitedStates(component.getVertexCount()), p, p, component, new boolean[component.getVertexCount()], freeEdges, new int[p], 0);
 			if (nextSolution == null) {
@@ -141,7 +148,7 @@ public class Solver {
 		if (visited.hasVisited(state)) {
 			return null;
 		}
-		// If we are done, start returning solution
+		// If all vertices are decontaminated, backtrack solution
 		int u = 0;
 		for (; u < state.length; u++) {
 			if (!state[u]) {
@@ -191,18 +198,11 @@ public class Solver {
 					// only one pursuer left to place, we need to update params accordingly
 					newState = new boolean[g.getVertexCount()];
 					for (int x = 0; x < g.getVertexCount(); x++) {
-						if (newFreeEdges[x] == 0) {
+						if (newFreeEdges[x] <= 0) {
 							newState[x] = true;
 						}
 					}
-					newFreeEdges = new int[g.getVertexCount()];
-					for (int x = 0; x < g.getVertexCount(); x++) {
-						if (!newState[x]) {
-							for (int n : g.getAdjacencyList().get(x)) {
-								newFreeEdges[n]++;
-							}
-						}
-					}
+					newFreeEdges = g.getIndegree();
 					
 					result = getSolution(visited, staticPursuers, staticPursuers, g, newState, newFreeEdges, new int[staticPursuers], 0);
 					if (result != null) {

@@ -171,6 +171,7 @@ public class Graph {
 	 * @return A lower bound for the number of pursuers needed, it can't be done with less than returned value.
 	 */
 	public int getLowerBoundNrOfPursuers() {
+		getIndegree();
 		//The minimum indegree is a lower bound because we must have that many pursuers to make any progress at all.
 		int min = Integer.MAX_VALUE;
 		for (int i = 0; i < indegree.length; i++) {
@@ -180,7 +181,7 @@ public class Graph {
 		return Math.max(1, min);
 	}
 	
-	private int[] getIndegree() {
+	public int[] getIndegree() {
 		if (this.indegree == null) {
 			indegree = new int[this.getVertexCount()];
 			for (LinkedList<Integer> vertices : neighbours) {
@@ -262,12 +263,15 @@ public class Graph {
 		if (upperBoundPursuers != 0) {
 			return upperBoundPursuers;
 		}
-		for (LinkedList<Integer> outdegree : neighbours) {
-			if (outdegree.size() > upperBoundPursuers) {
-				upperBoundPursuers = outdegree.size();
+		int[] indegree = getIndegree();
+		int max = Integer.MIN_VALUE;
+		for (int i : indegree) {
+			if (i > max) {
+				max = i;
 			}
 		}
-		return Math.max(1, upperBoundPursuers);
+		upperBoundPursuers = max;
+		return Math.max(upperBoundPursuers, 1);
 	}
 
 	/**
@@ -374,6 +378,15 @@ public class Graph {
 
 		/* Create subgraphs from the components above */
 		return getSubgraphs(comps);
+	}
+	
+	/** 
+	 * Returns true if this graph is a a singleton.
+	 * A singleton consists of one vertex.
+	 * @return True if the this graph consists of only one vertex
+	 */
+	public boolean isSingleton() {
+		return this.vertexCount == 1 ? true : false;
 	}
 
 	/**
