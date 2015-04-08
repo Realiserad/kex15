@@ -9,10 +9,11 @@ import java.util.List;
 
 /**
  * An immutable representation of a directed graph 
- * with vertices and edges.
+ * with vertices and edges. Self loops allowed but not multiple edges.
  *
  * @author Bastian Fredriksson
  * @author Edvin Lundberg
+ * @version 2015-04-08
  */
 public class Graph {
 	private ArrayList<LinkedList<Integer>> neighbours;
@@ -20,16 +21,18 @@ public class Graph {
 	private int lowerBoundPursuers;
 	private int upperBoundPursuers;
 	private int[] indegree;
+	private int[] translator; //Translates vertex indices to indices for whole graph. Used for components.
 
 	/**
 	 * Create a graph from a neighbour matrix "m".
 	 * The matrix given as first argument should contain
 	 * a one on position m[i][j] if there is an edge j->i
 	 * and zero otherwise.
+	 * @param newToOldTranslator 
 	 */
 	public Graph(int[][] m) {
+		this.vertexCount = m.length;
 		/* Create neighbour list */
-		HashSet<Integer> vertices = new HashSet<Integer>((int)(m.length / 0.75 + 1));
 		neighbours = new ArrayList<LinkedList<Integer>>(m.length);
 		for (int i=0; i<m.length; i++) {
 			neighbours.add(new LinkedList<Integer>());
@@ -40,14 +43,22 @@ public class Graph {
 					// Add edge col->row
 					neighbours.get(col).add(row);
 					edgeCount++;
-					vertices.add(col);
-					vertices.add(row);
 				}
 			}
 		}
-		
-		this.vertexCount = vertices.size() == 0 ? 1 : vertices.size();
 		this.lowerBoundPursuers = 0; // Initial lower bound
+	}
+	
+	/**
+	 * Create a graph from a neighbour matrix "m".
+	 * The matrix given as first argument should contain
+	 * a one on position m[i][j] if there is an edge j->i
+	 * and zero otherwise.
+	 * @param newToOldTranslator translates new vertex indices to old (whole graph) indices.
+	 */
+	public Graph(int[][] m, int[] newToOldTranslator) {
+		this(m);
+		this.translator = newToOldTranslator;
 	}
 	
 	/**
@@ -372,26 +383,40 @@ public class Graph {
 		ArrayList<HashSet<Integer>> partitionSets = new ArrayList<HashSet<Integer>>();
 		for (int i = 0; i < partitionCount; i++) partitionSets.add(new HashSet<Integer>(partitions[i]));
 
-		// Neighbour list for a DAG representing the topological order for the subgraphs.
-		// Each vertex in this graph is a partition and an edge means that the partitions
-		// have a common element.
-		// topologicalOrder.get(u).contains(v) is true if exists an edge v->u, i.e if
-		// the partition v supercedes the partition u in the topological ordering.
+		/* Neighbour list for a DAG representing the topological order for the subgraphs.
+		 * Each vertex in this graph is a partition and an edge means that the partitions
+		 * have a common element.
+		 * topologicalOrder.get(u).contains(v) is true if exists an edge v->u, i.e if
+		 * the partition v supercedes the partition u in the topological ordering.
+		 */
 		ArrayList<HashSet<Integer>> topologicalOrder = new ArrayList<HashSet<Integer>>();
 		for (int i = 0; i < partitionCount; i++) topologicalOrder.add(new HashSet<Integer>());
 
 		for (int i = 0; i < partitionCount; i++) {
 			HashSet<Integer> currentSet = partitionSets.get(i);
 			List<Integer> currentPartition = partitions[i];
+			
+			/* Use a translator to translate new vertexname into original vertexname */
+			int[] newToOldTranslator = new int[currentSet.size()];
+			int newIndex = 0;
+			for (int v : currentPartition) {
+				newToOldTranslator[newIndex]=v;
+				newIndex++;
+			}
+			int[] oldToNewTranslator = new int[this.getVertexCount()];
+			Arrays.fill(oldToNewTranslator, -1);
+			for (int v = 0; v < newToOldTranslator.length; v++) {
+				oldToNewTranslator[newToOldTranslator[v]] = v;
+			}
 
 			// matrix[u][v]=1 if there is an edge v->u
-			int[][] matrix = new int[this.getVertexCount()][this.getVertexCount()];
+			int[][] matrix = new int[currentPartition.size()][currentPartition.size()];
 
 			for (int vertex : currentPartition) {
 				for (int neighbour : neighbours.get(vertex)) {
 					if (currentSet.contains(neighbour)) {
 						// The subgraph we're building should contain an edge vertex->neighbour
-						matrix[neighbour][vertex]=1;
+						matrix[oldToNewTranslator[neighbour]][oldToNewTranslator[vertex]]=1;
 					} else {
 						// The partition i has a common element with the partition in which
 						// the neighbour resides
@@ -399,7 +424,7 @@ public class Graph {
 					}
 				}
 			}
-			subgraphs.add(new Graph(matrix));
+			subgraphs.add(new Graph(matrix, newToOldTranslator));
 		}
 
 		// The vector of subgraphs sorted in topological order
@@ -522,5 +547,18 @@ public class Graph {
 			}
 		}
 		return sb.toString();
+	}
+	
+	/**
+	 * Translates vertex index to index for the whole graph. This is because, for a subgraph,
+	 * the vertices will have different vertex indices than for the whole graph.
+	 * @param vertex
+	 * @return the vertex index in the whole graph
+	 */
+	public int translate(int vertex) {
+		if (translator == null) {
+			return vertex;
+		}
+		return translator[vertex];
 	}
 }
