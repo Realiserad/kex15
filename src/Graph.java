@@ -184,13 +184,13 @@ public class Graph {
 	public int[] getIndegree() {
 		if (this.indegree == null) {
 			indegree = new int[this.getVertexCount()];
-			for (LinkedList<Integer> vertices : neighbours) {
-				for (int neighbour : vertices) {
+			for (LinkedList<Integer> neighbourSet : neighbours) {
+				for (int neighbour : neighbourSet) {
 					this.indegree[neighbour]++;
 				}
 			}
 		}
-		return indegree;
+		return Solver.copy(indegree);
 	}
 
 	/**
@@ -271,7 +271,8 @@ public class Graph {
 			}
 		}
 		upperBoundPursuers = max;
-		return Math.max(upperBoundPursuers, 1);
+		//return Math.max(upperBoundPursuers, 1);
+		return this.getVertexCount();
 	}
 
 	/**
