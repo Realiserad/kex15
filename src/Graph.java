@@ -155,7 +155,7 @@ public class Graph {
 	}
 	
 	/**
-	 * 
+	 * Get a lower bound, that is, a positive number where the graph can not be solved with less pursuers than returned number.
 	 * @return A lower bound for the number of pursuers needed, it can't be done with less than returned value.
 	 */
 	public int getLowerBoundNrOfPursuers() {
