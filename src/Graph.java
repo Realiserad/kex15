@@ -19,6 +19,7 @@ public class Graph {
 	private int vertexCount, edgeCount;
 	private int lowerBoundPursuers;
 	private int upperBoundPursuers;
+	private int[] indegree;
 
 	/**
 	 * Create a graph from a neighbour matrix "m".
@@ -160,19 +161,24 @@ public class Graph {
 	 */
 	public int getLowerBoundNrOfPursuers() {
 		//The minimum indegree is a lower bound because we must have that many pursuers to make any progress at all.
-		int minIndegree = vertexCount; // Initial high value
-		for (int i = 0; i<vertexCount; i++) {
-			int i_indegree = 0; 
-			for (int j = 0; j < vertexCount; j++) {
-				//m[i][j] will be 1 if edge j->i, and zero otherwise. Therefore we can sum it up.
-				i_indegree += m[i][j]; 
-			}
-			if (i_indegree < minIndegree) {
-				minIndegree = i_indegree;
-			}
+		int min = Integer.MAX_VALUE;
+		for (int i = 0; i < indegree.length; i++) {
+			if (indegree[i] < min) min = indegree[i];
 		}
 		
-		return Math.max(1, minIndegree);
+		return Math.max(1, min);
+	}
+	
+	private int[] getIndegree() {
+		if (this.indegree == null) {
+			indegree = new int[this.getVertexCount()];
+			for (LinkedList<Integer> vertices : neighbours) {
+				for (int neighbour : vertices) {
+					this.indegree[neighbour]++;
+				}
+			}
+		}
+		return indegree;
 	}
 
 	/**
@@ -190,14 +196,8 @@ public class Graph {
 		 * a one on position m[i][j] if there is an edge j->i
 		 * and zero otherwise.
 		 */
-		// Keep track of the in-degree of each vertex
-		final int[] indegree = new int[m.length];
-		for (int r = 0; r < m.length; r++) {
-			for (int c = 0; c < m.length; c++) {
-				indegree[r] += m[r][c];
-			}
-		}
-
+		getIndegree();
+		
 		// Array of vertices which we will sort based on in-degree 
 		Integer[] vertices = new Integer[vertexCount];
 		for (int i = 0; i<vertices.length; i++) {
@@ -313,14 +313,6 @@ public class Graph {
 		/* When leaving a vertex, consider it unvisited */
 		visited[v_i] = false;
 		return false;
-	}
-
-	/**
-	 * Check if this vertex has an edge to itself.
-	 * @return True iff the vertex has a self-loop
-	 */
-	private boolean selfLoop(int vertex) {
-		return m[vertex][vertex] == 1;
 	}
 
 	/**
