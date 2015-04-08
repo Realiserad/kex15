@@ -325,6 +325,17 @@ public class Graph {
 		visited[v_i] = false;
 		return false;
 	}
+	
+	public int[][] getAdjacencyMatrix() {
+		int[][] m = new int[this.getVertexCount()][this.getVertexCount()];
+		for (int i = 0; i < this.getVertexCount(); i++) {
+			for (int neighbour : neighbours.get(i)) {
+				// i --> neighbour
+				m[neighbour][i]=1;
+			}
+		}
+		return m;
+	}
 
 	/**
 	 * Returns a list of maximal strong components for this graph. The list is sorted in the

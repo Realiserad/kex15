@@ -91,7 +91,7 @@ public class Solver {
 		LinkedList<LinkedList<int[]>> solutions = new LinkedList<LinkedList<int[]>>();
 		for (Graph component : queue) {
 			assert(solveComponent(component)!=null);
-			solutions.add(solveComponent(component));
+			solutions.addLast(solveComponent(component));
 		}
 
 		return solutions;
