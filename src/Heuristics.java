@@ -414,7 +414,6 @@ public class Heuristics {
 	 * @param strongComponent A strongly connected graph to decontaminate.
 	 * @param staticPursuers The number of pursuers in the strategy.
 	 * @param dynPursuers The number of pursuers left to place.
-	 * @param sourceState An array containing original indegree for each vertex.
 	 * @param state An array containing the number of free edges for each vertex. 
 	 * @param stateInspector A state inspector containing visited states.
 	 * @param vertices The vertices occupied by pursuers in this state.
@@ -426,6 +425,7 @@ public class Heuristics {
 		assert(staticPursuers >= dynPursuers);
 		d("State: " + arrayString(state), depth);
 		
+		int[] recontaminatedState = state;
 		if (staticPursuers == dynPursuers) {
 			/* This is a transition between two states */
 			if (stateInspector.isVisited(state)) {
@@ -442,8 +442,7 @@ public class Heuristics {
 				return strategy.addVertices(contaminatedVertices);
 			}
 			
-			/* The current state is no longer used, so we can safely replace it with the recontaminated state */
-			state = recontaminate(strongComponent, state);
+			recontaminatedState = recontaminate(strongComponent, state);
 			d("Recontaminated state: " + arrayString(state), depth);
 		}
 		
@@ -464,7 +463,7 @@ public class Heuristics {
 				strongComponent,
 				staticPursuers,
 				dynPursuers == 1 ? staticPursuers : dynPursuers - 1,
-				blockEdges(strongComponent, vertex, Arrays.copyOf(state, state.length)),
+				blockEdges(strongComponent, vertex, Arrays.copyOf(recontaminatedState, recontaminatedState.length)),
 				stateInspector,
 				dynPursuers == 1 ? new int[staticPursuers] : vertices,
 				staticPursuers == dynPursuers ? depth + 1 : depth
