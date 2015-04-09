@@ -423,12 +423,13 @@ public class Heuristics {
 	 */
 	private Strategy solve(Graph strongComponent, int staticPursuers, int dynPursuers, int[] state, StateInspector stateInspector, int[] vertices, int depth) {
 		assert(staticPursuers >= dynPursuers);
-		d("State: " + arrayString(state), depth);
+		d("State: " + arrayString(state) + " (" + staticPursuers + " " + dynPursuers + ")", depth);
 		
 		int[] recontaminatedState = state;
 		if (staticPursuers == dynPursuers) {
 			/* This is a transition between two states */
 			if (stateInspector.isVisited(state)) {
+				d("Abort. State is visisted.", depth);
 				return null;
 			}
 			
@@ -443,14 +444,14 @@ public class Heuristics {
 			}
 			
 			recontaminatedState = recontaminate(strongComponent, state);
-			d("Recontaminated state: " + arrayString(state), depth);
+			d("Recontaminated state: " + arrayString(recontaminatedState), depth);
 		}
 		
 		/* Continue the pursuit by positioning pursuers at the next available positions. */
 		for (int vertex = 0; vertex < state.length; vertex++) {
 			assert(state[vertex] >= 0);
 			
-			if (state[vertex] == 0) {
+			if (state[vertex] == 0 || isGuarded(vertices, staticPursuers - dynPursuers, vertex)) {
 				/* This vertex is decontaminated already, no need to put pursuer here */
 				continue;
 			}
@@ -466,7 +467,7 @@ public class Heuristics {
 				blockEdges(strongComponent, vertex, Arrays.copyOf(recontaminatedState, recontaminatedState.length)),
 				stateInspector,
 				dynPursuers == 1 ? new int[staticPursuers] : vertices,
-				staticPursuers == dynPursuers ? depth + 1 : depth
+				dynPursuers == 1 ? depth + 1 : depth
 			);
 			if (strategy != null) {
 				/* Strategy has been found from here, backtrack */
@@ -482,6 +483,23 @@ public class Heuristics {
 		return null;
 	}
 	
+	/**
+	 * Determine if there is a pursuer positioned at the vertex given as third
+	 * argument.
+	 * @param vertices An array of guarded vertices.
+	 * @param offset Skip elements in vertices with index larger than or equal to this value
+	 * @param vertex The vertex to look for
+	 * @return True if "vertex" is guarded, false otherwise
+	 */
+	private boolean isGuarded(int[] vertices, int offset, int vertex) {
+		for (int i = 0; i < offset; i++) {
+			if (vertices[i] == vertex) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/* 
 	 * Block edges u->v in a graph, given a pursuer is positioned at the
 	 * vertex u given as second argument. This method will block all edges originating
@@ -549,7 +567,7 @@ public class Heuristics {
 	private void d(String msg, int depth) {
 		String padding = "";
 		for (int i = 0; i < depth; i++) {
-			padding += " ";
+			padding += ">";
 		}
 		System.err.println(padding + msg);
 	}
