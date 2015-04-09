@@ -1,4 +1,3 @@
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -206,6 +205,10 @@ public class Heuristics {
 		 */
 		@Override
 		public String toString() {
+			if (strategy.isEmpty()) {
+				return "empty";
+			}
+			
 			StringBuilder sb = new StringBuilder();
 			for (int[] vertices : strategy) {
 				for (int vertex : vertices) {
@@ -213,7 +216,7 @@ public class Heuristics {
 				}
 				sb.append(System.lineSeparator());
 			}
-			return sb.toString();
+			return sb.deleteCharAt(sb.length() - 1).toString();
 		}
 		
 		/**
@@ -243,7 +246,6 @@ public class Heuristics {
 		/* Default values */
 		InputStream is = System.in;
 		
-		System.out.println(new File(".").getAbsoluteFile());
 		/* Parse arguments */
 		for (int i = 0; i < args.length; i++) {
 			int argCount = 0; // expected number of arguments to follow a flag
@@ -273,7 +275,7 @@ public class Heuristics {
 		}
 		
 		/* Read graph from stdin */
-		Kattio io = new Kattio(is);
+		Kattio io = new Kattio(is, System.out);
 		int vertexCount = io.getInt();
 		ArrayList<LinkedList<Integer>> adjacencyList = new ArrayList<LinkedList<Integer>>(vertexCount);
 		for (int i = 0; i < vertexCount; i++) adjacencyList.add(new LinkedList<Integer>());
@@ -283,7 +285,6 @@ public class Heuristics {
 			int v = io.getInt();
 			adjacencyList.get(u).add(v);
 		}
-		io.close();
 		
 		/* Create graph from adjacency list */
 		Graph graph = new Graph(adjacencyList);
@@ -293,14 +294,15 @@ public class Heuristics {
 		Strategy strategy = heuristics.solve(graph);
 		
 		/* Print the vertices to be decontaminated at each day */
-		System.out.print(strategy.toString());
+		io.println(strategy.toString());
 		
 		/* Verify the solution and print the result as a certificate */
 		if (strategy.verify(graph)) {
-			System.out.println("The solution is winning.");
+			io.println("The solution is winning.");
 		} else {
-			System.out.println("The solution is not winning.");
+			io.println("The solution is not winning.");
 		}
+		io.close();
 	}
 	
 	/**
@@ -363,11 +365,11 @@ public class Heuristics {
 			Strategy strategy = solve(
 					strongComponent, 
 					pursuerCount, 
-					pursuerCount, 
-					strongComponent.getIndegree(),
+					pursuerCount,
 					strongComponent.getIndegree(),
 					new StateInspector((int) Math.pow(2, strongComponent.getVertexCount())),
-					new int[pursuerCount]
+					new int[pursuerCount],
+					0
 			);
 			if (strategy != null) {
 				/* This strategy utilizes the smallest search number */
@@ -380,53 +382,51 @@ public class Heuristics {
 	
 	/**
 	 * Calculate the next state in a recursive manner until all vertices are decontaminated, whereby
-	 * this method returns a strategy by backtracking. The states are kept in an array freeEdges, where
-	 * freeEdges[v]=0 means that vertex v is decontaminated.
+	 * this method returns a strategy by backtracking.
 	 * @param strongComponent A strongly connected graph to decontaminate.
 	 * @param staticPursuers The number of pursuers in the strategy.
 	 * @param dynPursuers The number of pursuers left to place.
-	 * @param indegree An array containing original indegree for each vertex.
-	 * @param freeEdges An array containing the number of free edges for each vertex. 
+	 * @param sourceState An array containing original indegree for each vertex.
+	 * @param state An array containing the number of free edges for each vertex. 
 	 * @param stateInspector A state inspector containing visited states.
 	 * @param vertices The vertices occupied by pursuers in this state.
+	 * @param depth The number of steps in the current strategy.
 	 * @return A winning strategy for the graph given as first argument or null
 	 * if no strategy could be found.
 	 */
-	private Strategy solve(Graph strongComponent, int staticPursuers, int dynPursuers, int[] indegree, int[] freeEdges, StateInspector stateInspector, int[] vertices) {
+	private Strategy solve(Graph strongComponent, int staticPursuers, int dynPursuers, int[] state, StateInspector stateInspector, int[] vertices, int depth) {
 		assert(staticPursuers >= dynPursuers);
+		d("State: " + arrayString(state), depth);
 		
 		if (staticPursuers == dynPursuers) {
 			/* This is a transition between two states */
-			recontaminate(strongComponent, indegree, freeEdges);
-		}
-		
-		if (stateInspector.isVisited(indegree)) {
-			/* This state has already been reached from another branch. */
-			return null;
-		}
-		
-		if (staticPursuers == dynPursuers) {
-			LinkedList<Integer> contaminatedVertices = getContaminatedVertices(indegree, staticPursuers);
+			if (stateInspector.isVisited(state)) {
+				return null;
+			}
+			
+			stateInspector.markAsVisited(state);
+			
+			LinkedList<Integer> contaminatedVertices = getContaminatedVertices(state, staticPursuers);
 			if (contaminatedVertices.size() <= staticPursuers) {
 				/* It is possible to decontaminate the whole graph at this stage. */
 				Strategy strategy = new Strategy(staticPursuers, strongComponent);
-				for (int vertex : contaminatedVertices) {
-					vertex = strongComponent.translate(vertex);
-				}
+				d("Strategy! " + strategy.toString().replace(System.lineSeparator(), " / "), depth);
 				return strategy.addVertices(contaminatedVertices);
 			}
+			
+			/* The current state is no longer used, so we can safely replace it with the recontaminated state */
+			state = recontaminate(strongComponent, state);
 		}
 		
-		stateInspector.markAsVisited(indegree);
-		
 		/* Continue the pursuit by positioning pursuers at the next available positions. */
-		for (int vertex = 0; vertex < indegree.length; vertex++) {
-			assert(indegree[vertex] >= 0);
+		for (int vertex = 0; vertex < state.length; vertex++) {
+			assert(state[vertex] >= 0);
 			
-			if (indegree[vertex] == 0) {
+			if (state[vertex] == 0) {
 				/* This vertex is decontaminated already, no need to put pursuer here */
 				continue;
 			}
+			d("Testing vertex " + vertex, depth);
 			
 			/* Remember which vertex we put a pursuer on */
 			vertices[staticPursuers - dynPursuers] = vertex;
@@ -435,71 +435,61 @@ public class Heuristics {
 				strongComponent,
 				staticPursuers,
 				dynPursuers == 1 ? staticPursuers : dynPursuers - 1,
-				indegree,
-				decontaminate(strongComponent, freeEdges, vertex),
+				blockEdges(strongComponent, vertex, state),
 				stateInspector,
-				dynPursuers == 1 ? new int[staticPursuers] : vertices
+				dynPursuers == 1 ? new int[staticPursuers] : vertices,
+				staticPursuers == dynPursuers ? depth + 1 : depth
 			);
 			if (strategy != null) {
 				/* Strategy has been found from here, backtrack */
 				if (staticPursuers == dynPursuers) {
-					return strategy.addVertices(vertices);
+					strategy.addVertices(vertices);
 				}
+				d("Strategy! " + strategy.toString().replace(System.lineSeparator(), " / "), depth);
+				return strategy;
 			}
 		}
 		
+		d("Abort. No solution.", depth);
 		return null;
-	}
-	
-	/* 
-	 * Put a pursuer at the vertex v given as third argument and return a new
-	 * array of free edges where all neighbours to v will have its indegree
-	 * reduced by one.
-	 */
-	private int[] decontaminate(Graph strongComponent, int[] freeEdges, int vertex) {
-		assert(freeEdges[vertex] > 0);
-		
-		int[] newFreeEdges = Arrays.copyOf(freeEdges, freeEdges.length);
-		blockEdges(strongComponent, vertex, newFreeEdges);
-		return newFreeEdges;
 	}
 	
 	/* 
 	 * Block edges u->v in a graph, given a pursuer is positioned at the
 	 * vertex u given as second argument. This method will block all edges originating
 	 * from u, meaning any neighbor v to u, will have its indegree reduced by one.
+	 * This method works with a copy of the state, and leaves the original untouched.
 	 */
-	private void blockEdges(Graph strongComponent, int vertex, int[] freeEdges) {
+	private int[] blockEdges(Graph strongComponent, int vertex, int[] state) {
+		int[] nextState = Arrays.copyOf(state, state.length);
 		for (int neighbour : strongComponent.getNeighbours(vertex)) {
-			freeEdges[neighbour]--;
+			assert(nextState[neighbour] > 0);
+			nextState[neighbour]--;
 		}
+		return nextState;
 	}
 	
 	/**
 	 * Remeasure the number of free edges for each vertex given a transition between two 
 	 * states. Since this is when the monk moves, recontamination can occur. 
 	 */
-	private int[] recontaminate(Graph strongComponent, int[] indegree, int[] freeEdges) {
-		LinkedList<Integer> decontaminated = new LinkedList<Integer>();
-		for (int i = 0; i < indegree.length; i++) {
-			if (freeEdges[i] == 0) {
-				decontaminated.add(i);
+	private int[] recontaminate(Graph strongComponent, int[] state) {
+		int[] nextState = strongComponent.getIndegree();
+		for (int i = 0; i < state.length; i++) {
+			if (state[i] == 0) {
+				blockEdges(strongComponent, i, nextState);
 			}
-			freeEdges[i] = indegree[i];
 		}
-		for (int vertex : decontaminated) {
-			blockEdges(strongComponent, vertex, freeEdges);
-		}
-		return freeEdges;
+		return nextState;
 	}
 
 	/**
 	 * Returns a list of contaminated vertices, with at most staticPursuers + 1 elements.
 	 */
-	private LinkedList<Integer> getContaminatedVertices(int[] indegree, int staticPursuers) {
+	private LinkedList<Integer> getContaminatedVertices(int[] state, int staticPursuers) {
 		LinkedList<Integer> contaminatedVertices = new LinkedList<Integer>();
-		for (int i = 0; i < indegree.length; i++) {
-			if (indegree[i] > 0) {
+		for (int i = 0; i < state.length; i++) {
+			if (state[i] > 0) {
 				/* This vertex is contaminated because it still has an incoming edge free */
 				contaminatedVertices.add(i);
 				if (contaminatedVertices.size() > staticPursuers) {
@@ -509,5 +499,30 @@ public class Heuristics {
 		}
 		
 		return contaminatedVertices;
+	}
+	
+	/************************************************************************************/
+	/*****************************        DEBUG        **********************************/
+	
+	/**
+	 * Returns a string of integers from an array.
+	 */
+	private String arrayString(int[] array) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < array.length; i++) {
+			sb.append(array[i] + " ");
+		}
+		return sb.toString();
+	}
+	
+	/**
+	 * Print a message to stderr.
+	 */
+	private void d(String msg, int depth) {
+		String padding = "";
+		for (int i = 0; i < depth; i++) {
+			padding += " ";
+		}
+		System.err.println(padding + msg);
 	}
 }
