@@ -91,6 +91,13 @@ public class Graph {
 	public int getEdgeCount() {
 		return edgeCount;
 	}
+	
+	/**
+	 * Get all neighbours for a vertex.
+	 */
+	public LinkedList<Integer> getNeighbours(int vertex) {
+		return neighbours.get(vertex);
+	}
 
 	/**
 	 * Get all cycles in this graph.
