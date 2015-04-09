@@ -51,6 +51,7 @@ public class Verify {
 	private int vertexCount;
 	private int[][] graph;
 	private int[] w;
+	List<int[]> states;
 	
 	public static void main(String[] args) {
 		new Verify();
@@ -86,7 +87,7 @@ public class Verify {
 		
 		/* Save states for debugging. A state consists of a bitvector with a one on position v
 		 * if vertex v is decontaminated. */
-		List<int[]> states = new LinkedList<int[]>();
+		states = new LinkedList<int[]>();
 		
 		/* Verify solution by iterating the formula s_{n+1}=graph*s_{n}+seed with s_{0} = 0 */
 		int[] s = expand(seed[0], ROWS); // s_{1}
@@ -103,6 +104,16 @@ public class Verify {
 			io.println("NO");
 		}
 		
+		io.print(getStatesString());
+		
+		io.close();
+	}
+	
+	/**
+	 * Returns String representing the states produced by last given solution.
+	 * @return String representing the states produced by last given solution.
+	 */
+	public String getStatesString() {
 		/* Print states */
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < states.size(); i++) {
@@ -113,11 +124,9 @@ public class Verify {
 			}
 			sb.append("\n");
 		}
-		io.print(sb.toString());
-		
-		io.close();
+		return sb.toString();
 	}
-	
+
 	/**
 	 * Returns padding for an integer to smoothly align two columns
 	 * in a printout.
@@ -169,10 +178,16 @@ public class Verify {
 	 * @return True if the solution is valid, false otherwise
 	 */
 	public boolean verify(int p, int len, int[][] seed) {
+		/* Save states for debugging. A state consists of a bitvector with a one on position v
+		 * if vertex v is decontaminated. */
+		states = new LinkedList<int[]>();
+		
 		/* Verify solution by iterating the formula s_{n+1}=graph*s_{n}+seed with s_{0} = 0 */
 		int[] s = expand(seed[0], vertexCount); // s_{1}
+		states.add(s);
 		for (int i = 1; i < len; i++) {
 			s = radd(rmul(graph, s, w), expand(seed[i], vertexCount));
+			states.add(s);
 		}
 		
 		return (onesOnly(s));
