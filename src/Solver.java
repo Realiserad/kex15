@@ -1,6 +1,7 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -11,12 +12,18 @@ import java.util.List;
  * @version 2015-04-07
  */
 public class Solver {
-	private Graph g = null;
+	private Graph gbig = null; // The whole graph
 	
 	public Graph getGraph() {
-		return g;
+		return gbig;
 	}
 	
+	/**
+	 * VisitedStates keeps track of the states previously visited. This enables backtracking.
+	 * A state s will be marked as visited after the call to hasVisited(s).
+	 * @author Edvin
+	 *
+	 */
 	private class VisitedStates {
 		/*
 		 * Plan E: Use trie
@@ -92,12 +99,13 @@ public class Solver {
 		} else {
 			System.err.println("NOOOO!");
 		}
+		System.err.println("Verify says:\n"+v.getStatesString());
 	}
 
 	private LinkedList<LinkedList<int[]>> getSolution() {
 		Kattio io = null;
 		try {
-			io = new Kattio(new FileInputStream("/afs/nada.kth.se/home/o/u1h8xqho/Downloads/kex15/tests/3star.txt"), System.out);
+			io = new Kattio(new FileInputStream("./tests/3star.txt"), System.out);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -117,7 +125,7 @@ public class Solver {
 
 		/* Create a graph */
 		Graph g = new Graph(neighbours);
-		this.g = g;
+		this.gbig = g;
 
 		/* Get strong components */
 		Graph[] queue = g.getStrongComponents();
@@ -145,7 +153,6 @@ public class Solver {
 	 * @return
 	 */
 	private LinkedList<int[]> solveComponent(Graph component) {
-		int[] freeEdges = component.getIndegree();
 		/* Determine bounds */
 		int lowerBound = component.getLowerBoundNrOfPursuers();
 		int upperBound = component.getUpperBoundNrOfPursuers();
@@ -155,7 +162,12 @@ public class Solver {
 		if (lowerBound == upperBound) upperBound++;
 		assert(p>0);
 		for (int pursuers = lowerBound; pursuers <= upperBound; pursuers++) {
-			nextSolution = getSolution(new VisitedStates(component.getVertexCount()), pursuers, pursuers, component, new boolean[component.getVertexCount()], freeEdges, new int[pursuers], 0);
+			int[] freeEdges = component.getIndegree();
+			VisitedStates visited = new VisitedStates(component.getVertexCount());
+			boolean[] decontaminated = new boolean[component.getVertexCount()];
+			Arrays.fill(decontaminated, false);
+			int[] placements = new int[pursuers];
+			nextSolution = getSolution(visited, pursuers, pursuers, component, decontaminated, freeEdges, placements, 0);
 			if (nextSolution != null) {
 				return nextSolution;
 			}
@@ -194,16 +206,9 @@ public class Solver {
 			return null;
 		}
 		// If all vertices are decontaminated, backtrack solution
-		LinkedList<Integer> contaminated = new LinkedList<Integer>();
-		for (int u = 0; u < state.length; u++) {
-			if (!state[u]) {
-				contaminated.add(u);
-				if (contaminated.size() > staticPursuers) {
-					break;
-				}
-			}
-		}
-		if (contaminated.size() <= staticPursuers && pos==0) {
+		LinkedList<Integer> contaminated = getContaminated(state);
+		if (contaminated.size() <= dynPursuers && dynPursuers == staticPursuers) {
+			//Condition implies pos == 0
 			System.err.println("Solution reachable from here. Contaminated vertices: " + contaminated.toString());
 			for (int vertex : contaminated) {
 				placements[pos] = g.translate(vertex);
@@ -215,11 +220,16 @@ public class Solver {
 			System.err.println("b ( " + getArrayString(placements)+ " )");
 			return ll;
 		}
-				
-		// Place a pursuer on a contaminated vertex.
+		
+		/* RECURSIVE CASES
+		 * We are either in the process of placing our pursuers on vertices in a given time, or we are placing our last
+		 * pursuer which means we need to move on to the next timestep afterwards. 
+		 * */
+		
+		/* Place a pursuer on a contaminated vertex. */
 		for (int i = 0; i < g.getVertexCount(); i++) {
 			if (state[i]) {
-				// No need to place pursuer here since decontaminated
+				// No need to place pursuer here since i is already decontaminated
 				continue;
 			}
 
@@ -238,26 +248,32 @@ public class Solver {
 			 */
 			// c > 0 bugg ?
 			if (true) {
-				boolean[] newState; 
+				final boolean[] newState; 
 				int[] newFreeEdges = copy(freeEdges);
-				int[] newPlacements = copy(placements);
+				final int[] newPlacements = copy(placements);
+				/* We place a pursuer on i, thus blocking all outcoming edges from i and lowering the number of "free" edges
+				 * of the vertices i points to. */
 				for (int v : neighbours) {
-					newFreeEdges[v]--;
+					if (newFreeEdges[v] > 0) {
+						newFreeEdges[v]--;
+					}
 					assert(newFreeEdges[v]>=0); //FIXME wtf???
 				}
 				newPlacements[pos] = g.translate(i);
-				LinkedList<int[]> result;
+				final LinkedList<int[]> result;
+				/* Case: We are not placing our last pursuer here, and are continuing on the same state/timestep */
 				if (dynPursuers > 1) {
 					newState = copy(state);
-					newState[i] = true;
+					newState[i] = true; // We just placed a pursuer on i, decontaminating it
 					result = getSolution(visited, staticPursuers, dynPursuers-1, g, newState, newFreeEdges, newPlacements, pos+1);
 					if (result != null) {
 						System.err.println("b");
 						return result;
 					}
 				} else {
-					// only one pursuer left to place, we need to update params accordingly
+					/* Case: only one pursuer left to place, we need to update params accordingly */
 					newState = new boolean[g.getVertexCount()];
+					Arrays.fill(newState, false);
 					
 					/* Determine which nodes will be decontaminated the next day */
 					for (int x = 0; x < g.getVertexCount(); x++) {
@@ -280,11 +296,11 @@ public class Solver {
 							}
 						}
 					}
-					
+					/* Moving on to next state/timestep */
 					result = getSolution(visited, staticPursuers, staticPursuers, g, newState, newFreeEdges, new int[staticPursuers], 0);
 					if (result != null) {
 						result.addFirst(newPlacements);
-						System.err.println("b ( " + result.toString() + ")");
+						pResult(result);
 						return result;
 					}
 				}
@@ -294,6 +310,29 @@ public class Solver {
 		return null;
 	}
 	
+	private void pResult(LinkedList<int[]> result) {
+		System.err.print("b ( ");
+		for (int[] placement : result) {
+			System.err.print("["+getArrayString(placement)+"] ");
+		}
+		System.err.println(")");
+	}
+
+	/**
+	 * Help method to get the contaminated vertices in a state. 
+	 * @param state The state where state[x] = true iff x is decontaminated.
+	 * @return The contaminated vertices with component vertex-indexing.
+	 */
+	private LinkedList<Integer> getContaminated(boolean[] state) {
+		LinkedList<Integer> contaminated = new LinkedList<Integer>();
+		for (int u = 0; u < state.length; u++) {
+			if (!state[u]) { // u is contaminated
+				contaminated.add(u);
+			}
+		}
+		return contaminated;
+	}
+
 	private String getArrayString(int[] arr) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < arr.length; i++) {
