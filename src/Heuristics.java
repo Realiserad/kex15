@@ -216,7 +216,35 @@ public class Heuristics {
 				}
 				sb.append(System.lineSeparator());
 			}
-			return sb.deleteCharAt(sb.length() - 1).toString();
+			return sb.toString();
+		}
+		
+		/**
+		 * Returns a simple string representation of this object, suitable
+		 * for printing to stdout or logfiles.
+		 */
+		public String getSimpleRepresentation() {
+			if (strategy.isEmpty()) {
+				return "empty";
+			}
+			
+			StringBuilder sb = new StringBuilder();
+			int count = 0;
+			for (int[] vertices : strategy) {
+				if (count > 0) {
+					sb.append(" ");
+				}
+				sb.append("(");
+				for (int i = 0; i < vertices.length; i++) {
+					sb.append(vertices[i] + 1);
+					if (i != vertices.length - 1) {
+						sb.append(" ");
+					}
+				}
+				sb.append(")");
+				count++;
+			}
+			return sb.toString();
 		}
 		
 		/**
@@ -410,12 +438,13 @@ public class Heuristics {
 			if (contaminatedVertices.size() <= staticPursuers) {
 				/* It is possible to decontaminate the whole graph at this stage. */
 				Strategy strategy = new Strategy(staticPursuers, strongComponent);
-				d("Strategy! " + strategy.toString().replace(System.lineSeparator(), " / "), depth);
+				d("Strategy found at depth " + depth + "!", depth);
 				return strategy.addVertices(contaminatedVertices);
 			}
 			
 			/* The current state is no longer used, so we can safely replace it with the recontaminated state */
 			state = recontaminate(strongComponent, state);
+			d("Recontaminated state: " + arrayString(state), depth);
 		}
 		
 		/* Continue the pursuit by positioning pursuers at the next available positions. */
@@ -435,7 +464,7 @@ public class Heuristics {
 				strongComponent,
 				staticPursuers,
 				dynPursuers == 1 ? staticPursuers : dynPursuers - 1,
-				blockEdges(strongComponent, vertex, state),
+				blockEdges(strongComponent, vertex, Arrays.copyOf(state, state.length)),
 				stateInspector,
 				dynPursuers == 1 ? new int[staticPursuers] : vertices,
 				staticPursuers == dynPursuers ? depth + 1 : depth
@@ -445,7 +474,7 @@ public class Heuristics {
 				if (staticPursuers == dynPursuers) {
 					strategy.addVertices(vertices);
 				}
-				d("Strategy! " + strategy.toString().replace(System.lineSeparator(), " / "), depth);
+				d("Strategy: " + strategy.getSimpleRepresentation(), depth);
 				return strategy;
 			}
 		}
@@ -458,20 +487,20 @@ public class Heuristics {
 	 * Block edges u->v in a graph, given a pursuer is positioned at the
 	 * vertex u given as second argument. This method will block all edges originating
 	 * from u, meaning any neighbor v to u, will have its indegree reduced by one.
-	 * This method works with a copy of the state, and leaves the original untouched.
+	 * This method does not work with a copy of the state.
 	 */
 	private int[] blockEdges(Graph strongComponent, int vertex, int[] state) {
-		int[] nextState = Arrays.copyOf(state, state.length);
 		for (int neighbour : strongComponent.getNeighbours(vertex)) {
-			assert(nextState[neighbour] > 0);
-			nextState[neighbour]--;
+			assert(state[neighbour] > 0);
+			state[neighbour]--;
 		}
-		return nextState;
+		return state;
 	}
 	
 	/**
 	 * Remeasure the number of free edges for each vertex given a transition between two 
-	 * states. Since this is when the monk moves, recontamination can occur. 
+	 * states. Since this is when the monk moves, recontamination can occur.
+	 * This method works with a copy of the state, and leaves the original untouched.
 	 */
 	private int[] recontaminate(Graph strongComponent, int[] state) {
 		int[] nextState = strongComponent.getIndegree();
