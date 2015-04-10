@@ -4,8 +4,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
-
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import java.util.List;
 
 /**
  * Heuristics for The Monk problem.
@@ -13,6 +12,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  * @author Edvin Lundberg
  */
 public class Heuristics {
+	private static boolean DEBUG = false;
 	
 	public enum StateInspectorType {
 	    BLOOMFILTER, TRIE, ARRAY,
@@ -370,12 +370,15 @@ public class Heuristics {
 	 */
 	public Strategy solve(Graph g) {
 		/* The strong components of this graph */
-		Graph[] strongComponents = g.getStrongComponents();
+		List<Graph> strongComponents = g.getStrongComponents();
+		d("Number of strong components: " + strongComponents.size());
 		/* A list of strategies for each stable component */
 		LinkedList<Strategy> strategies = new LinkedList<Strategy>();
 		
 		/* Solve each strong component separately */
 		for (Graph strongComponent : strongComponents) {
+			d("Number of nodes: " + strongComponent.getVertexCount());
+			d("Graph: " + strongComponent.toString());
 			if (strongComponent.isSingleton()) {
 				/* The strong component consists of only one vertex and has a trivial strategy */
 				strategies.add(Strategy.getSingletonStrategy(strongComponent));
@@ -579,10 +582,15 @@ public class Heuristics {
 	 * Print a message to stderr.
 	 */
 	private void d(String msg, int depth) {
+		if (!DEBUG) return;
 		String padding = "";
 		for (int i = 0; i < depth; i++) {
 			padding += ">";
 		}
 		System.err.println(padding + msg);
+	}
+	
+	private void d(String msg) {
+		System.err.println(msg);
 	}
 }

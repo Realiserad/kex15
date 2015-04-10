@@ -243,12 +243,12 @@ public class UnitTest {
 				{ 0, 0, 1, 0, 1 },
 				{ 0, 0, 0, 1, 0 },
 		});
-		Graph[] strongComponents = g.getStrongComponents();
+		List<Graph> strongComponents = g.getStrongComponents();
 		List<String> componentStrings = Arrays.asList(new String[] {
 				"1 --> 3\n2 --> 1\n3 --> 2\n",
 				"4 --> 5\n5 --> 4\n",
 		});
-		assertTrue(strongComponents.length==componentStrings.size());
+		assertTrue(strongComponents.size()==componentStrings.size());
 		for (Graph strongComponent : strongComponents) {
 			assertTrue(componentStrings.contains(strongComponent.toString()));
 		}
@@ -262,11 +262,11 @@ public class UnitTest {
 				{0,1,1,1},
 				{0,0,1,1},
 		});
-		Graph[] strongComponents = g.getStrongComponents();
+		List<Graph> strongComponents = g.getStrongComponents();
 		List<String> componentStrings = Arrays.asList(new String[] {
 				"1 --> 2\n2 --> 1\n2 --> 3\n3 --> 2\n3 --> 3\n3 --> 4\n4 --> 3\n4 --> 4\n",
 		});
-		assertTrue(strongComponents.length==componentStrings.size());
+		assertTrue(strongComponents.size()==componentStrings.size());
 		for (Graph strongComponent : strongComponents) {
 			assertTrue(componentStrings.contains(strongComponent.toString()));
 		}
@@ -281,14 +281,14 @@ public class UnitTest {
 				{0,0,1,0,0},
 				{0,0,1,1,1},
 		});
-		Graph[] strongComponents = g.getStrongComponents();
+		List<Graph> strongComponents = g.getStrongComponents();
 		List<String> componentStrings = Arrays.asList(new String[] {
 				"1 --> 1\n",
 				"2 --> 2\n",
 				"3 --> 3\n3 --> 4\n4 --> 3\n",
 				"5 --> 5\n",
 		});
-		assertTrue(strongComponents.length==componentStrings.size());
+		assertTrue(strongComponents.size()==componentStrings.size());
 		for (Graph strongComponent : strongComponents) {
 			assertTrue(componentStrings.contains(strongComponent.toString()));
 		}
@@ -301,13 +301,13 @@ public class UnitTest {
 				{0,0,0},
 				{1,1,1},
 		});
-		Graph[] strongComponents = g.getStrongComponents();
+		List<Graph> strongComponents = g.getStrongComponents();
 		List<String> componentStrings = Arrays.asList(new String[] {
 				"no edges\n",
 				"no edges\n",
 				"3 --> 3\n",
 		});
-		assertTrue(strongComponents.length==componentStrings.size());
+		assertTrue(strongComponents.size()==componentStrings.size());
 		for (Graph strongComponent : strongComponents) {
 			assertTrue(componentStrings.contains(strongComponent.toString()));
 		}
