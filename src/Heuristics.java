@@ -5,12 +5,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 /**
  * Heuristics for The Monk problem.
  * @author Bastian Fredriksson
  * @author Edvin Lundberg
  */
 public class Heuristics {
+	
+	public enum StateInspectorType {
+	    BLOOMFILTER, TRIE, ARRAY,
+	}
 	
 	/**
 	 * Class for managing states. A state consists of the decontaminated
@@ -23,8 +29,12 @@ public class Heuristics {
 		 * Create a new inspector without any stored states.
 		 * @param expectedCapacity The expected number of invokations to markAsVisited().
 		 */
-		public StateInspector(int expectedCapacity) {
-			visitedStates = new BloomFilter<String>(0.001, expectedCapacity);
+		public StateInspector(int vertices, StateInspectorType mode) {
+//			switch (mode) {
+//			case BLOOMFILTER: 
+//			default: throw new NotImplementedException();
+//			}
+			visitedStates = new BloomFilter<String>(0.001, (int) Math.pow(2, vertices));
 		}
 		
 		/**
@@ -214,7 +224,7 @@ public class Heuristics {
 				for (int vertex : vertices) {
 					sb.append((vertex + 1) + " ");
 				}
-				sb.append(System.lineSeparator());
+				sb.append("\n");
 			}
 			return sb.toString();
 		}
@@ -395,7 +405,8 @@ public class Heuristics {
 					pursuerCount, 
 					pursuerCount,
 					strongComponent.getIndegree(),
-					new StateInspector((int) Math.pow(2, strongComponent.getVertexCount())),
+					strongComponent.getIndegree(),
+					new StateInspector(strongComponent.getVertexCount(), StateInspectorType.BLOOMFILTER),
 					new int[pursuerCount],
 					0
 			);
@@ -414,44 +425,43 @@ public class Heuristics {
 	 * @param strongComponent A strongly connected graph to decontaminate.
 	 * @param staticPursuers The number of pursuers in the strategy.
 	 * @param dynPursuers The number of pursuers left to place.
-	 * @param state An array containing the number of free edges for each vertex. 
+	 * @param currentState An array containing the number of free edges for each vertex. 
 	 * @param stateInspector A state inspector containing visited states.
 	 * @param vertices The vertices occupied by pursuers in this state.
 	 * @param depth The number of steps in the current strategy.
 	 * @return A winning strategy for the graph given as first argument or null
 	 * if no strategy could be found.
 	 */
-	private Strategy solve(Graph strongComponent, int staticPursuers, int dynPursuers, int[] state, StateInspector stateInspector, int[] vertices, int depth) {
+	private Strategy solve(Graph strongComponent, int staticPursuers, int dynPursuers, int[] currentState, int[] nextState, StateInspector stateInspector, int[] vertices, int depth) {
 		assert(staticPursuers >= dynPursuers);
-		d("State: " + arrayString(state) + " (" + staticPursuers + " " + dynPursuers + ")", depth);
+		boolean newDay = (staticPursuers == dynPursuers);
+		boolean lastPursuer = (dynPursuers == 1);
 		
-		int[] recontaminatedState = state;
-		if (staticPursuers == dynPursuers) {
+		d("State: " + arrayString(currentState) + " (" + staticPursuers + " " + dynPursuers + ")", depth);
+		
+		if (newDay) {
 			/* This is a transition between two states */
-			if (stateInspector.isVisited(state)) {
+			if (stateInspector.isVisited(currentState)) {
 				d("Abort. State is visisted.", depth);
 				return null;
 			}
 			
-			stateInspector.markAsVisited(state);
+			stateInspector.markAsVisited(currentState);
 			
-			LinkedList<Integer> contaminatedVertices = getContaminatedVertices(state, staticPursuers);
+			LinkedList<Integer> contaminatedVertices = getContaminatedVertices(currentState, staticPursuers);
 			if (contaminatedVertices.size() <= staticPursuers) {
 				/* It is possible to decontaminate the whole graph at this stage. */
 				Strategy strategy = new Strategy(staticPursuers, strongComponent);
 				d("Strategy found at depth " + depth + "!", depth);
 				return strategy.addVertices(contaminatedVertices);
 			}
-			
-			recontaminatedState = recontaminate(strongComponent, state);
-			d("Recontaminated state: " + arrayString(recontaminatedState), depth);
 		}
 		
 		/* Continue the pursuit by positioning pursuers at the next available positions. */
-		for (int vertex = 0; vertex < state.length; vertex++) {
-			assert(state[vertex] >= 0);
+		for (int vertex = 0; vertex < currentState.length; vertex++) {
+			assert(currentState[vertex] >= 0);
 			
-			if (state[vertex] == 0 || isGuarded(vertices, staticPursuers - dynPursuers, vertex)) {
+			if (currentState[vertex] == 0) {
 				/* This vertex is decontaminated already, no need to put pursuer here */
 				continue;
 			}
@@ -460,18 +470,24 @@ public class Heuristics {
 			/* Remember which vertex we put a pursuer on */
 			vertices[staticPursuers - dynPursuers] = vertex;
 			
+			/* Block edges originating from the current vertex */
+			int[] newCurrentState = Arrays.copyOf(currentState, currentState.length);
+			int[] newNextState = Arrays.copyOf(nextState, nextState.length);
+			decontaminate(newCurrentState, newNextState, vertex, strongComponent);
+						
 			Strategy strategy = solve(
 				strongComponent,
 				staticPursuers,
-				dynPursuers == 1 ? staticPursuers : dynPursuers - 1,
-				blockEdges(strongComponent, vertex, Arrays.copyOf(recontaminatedState, recontaminatedState.length)),
+				lastPursuer ? staticPursuers : dynPursuers - 1,
+				lastPursuer ? newNextState : newCurrentState,
+				lastPursuer ? transition(newNextState, strongComponent) : newNextState,
 				stateInspector,
-				dynPursuers == 1 ? new int[staticPursuers] : vertices,
-				dynPursuers == 1 ? depth + 1 : depth
+				lastPursuer ? new int[staticPursuers] : vertices,
+				lastPursuer ? depth + 1 : depth
 			);
 			if (strategy != null) {
 				/* Strategy has been found from here, backtrack */
-				if (staticPursuers == dynPursuers) {
+				if (lastPursuer) {
 					strategy.addVertices(vertices);
 				}
 				d("Strategy: " + strategy.getSimpleRepresentation(), depth);
@@ -483,21 +499,19 @@ public class Heuristics {
 		return null;
 	}
 	
-	/**
-	 * Determine if there is a pursuer positioned at the vertex given as third
-	 * argument.
-	 * @param vertices An array of guarded vertices.
-	 * @param offset Skip elements in vertices with index larger than or equal to this value
-	 * @param vertex The vertex to look for
-	 * @return True if "vertex" is guarded, false otherwise
-	 */
-	private boolean isGuarded(int[] vertices, int offset, int vertex) {
-		for (int i = 0; i < offset; i++) {
-			if (vertices[i] == vertex) {
-				return true;
+	private int[] transition(int[] state, Graph strongComponent) {
+		int[] nextState = strongComponent.getIndegree();
+		for (int vertex = 0; vertex < state.length; vertex++) {
+			if (state[vertex]==0){
+				blockEdges(strongComponent, vertex, nextState);
 			}
 		}
-		return false;
+		return nextState;
+	}
+
+	private void decontaminate(int[] currentState, int[] nextState, int vertex, Graph strongComponent) {
+		currentState[vertex] = 0;
+		blockEdges(strongComponent, vertex, nextState);
 	}
 
 	/* 
