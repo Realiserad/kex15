@@ -5,9 +5,6 @@ import java.util.Random;
 
 /**
  * Generate graphs using Watts-Strogatz graph generation algorithm.
- *
- * The graph generated will be represented with a binary neighbour matrix M,
- * where M[i][j]=1 means that there is an edge j->i.
  * 
  * -------------------------------------------------------------------------|
  * Usage: java Generate [options]                                           |
@@ -23,9 +20,12 @@ import java.util.Random;
  *   The test files will be named                  |                        |
  *   test01, test02... testN and stored in         |                        |
  *   the current directory.                        |                        |
- * --edge Output graph as an edge representation   |                        |
+ * --edge Output graph as an edge representation   |    off                 |
  *   instead of a matrix representation. Vertices  |                        |
  *   will be numbered from 0 to N-1.               |                        |
+ * --vcount Output number of vertices on first     |    off                 |
+ *   row. Will be disabled unless used together    |                        |
+ *   with --edge flag.                             |                        |
  * -------------------------------------------------------------------------|
  *
  * @author Bastian Fredriksson
@@ -45,6 +45,7 @@ public class Generate {
 	private static int rand = 100;
 	private static boolean file = false;
 	private static boolean asEdges = false;
+	private static boolean vertexCount = false;
 	private ArrayList<Edge> edges;
 
 	public static void main(String[] args) {
@@ -64,6 +65,8 @@ public class Generate {
 				file = true;
 			} else if (args[i].equals("--edge")) {
 				asEdges = true;
+			} else if (args[i].equals("--vcount")) {
+				vertexCount = true;
 			} else {
 				System.err.println("Unknown flag " + args[i]);
 				System.exit(0);
@@ -129,8 +132,8 @@ public class Generate {
 		PrintWriter writer;
 		try {
 			writer = new PrintWriter(file, "UTF-8");
-			if (asEdges) writer.print(matrixString(m));
-			else writer.print(edgeString(m));
+			if (asEdges) writer.print(edgeString(m));
+			else writer.print(matrixString(m));
 			writer.close();
 		} catch (Exception e) {
 			System.err.println(e.getMessage());
@@ -139,6 +142,7 @@ public class Generate {
 
 	private String edgeString(int[][] m) {
 		StringBuilder sb = new StringBuilder();
+		if (vertexCount) sb.append(m.length + "\n");
 		for (int col = 0; col < m.length; col++) {
 			for (int row = 0; row < m.length; row++) {
 				if (m[row][col]==1) {

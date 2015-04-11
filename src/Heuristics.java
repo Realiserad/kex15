@@ -15,59 +15,96 @@ public class Heuristics {
 	private static boolean DEBUG = false;
 	
 	public enum StateInspectorType {
-	    BLOOMFILTER, TRIE, ARRAY,
+	    BLOOM_FILTER, ARRAY,
 	}
 	
-	/**
-	 * Class for managing states. A state consists of the decontaminated
-	 * nodes in a graph.
-	 */
-	private class StateInspector {
-		private BloomFilter<String> visitedStates;
-		
-		/** 
-		 * Create a new inspector without any stored states.
-		 * @param expectedCapacity The expected number of invokations to markAsVisited().
-		 */
-		public StateInspector(int vertices, StateInspectorType mode) {
-//			switch (mode) {
-//			case BLOOMFILTER: 
-//			default: throw new NotImplementedException();
-//			}
-			visitedStates = new BloomFilter<String>(0.001, (int) Math.pow(2, vertices));
-		}
-		
+	private interface StateInspector {
 		/**
 		 * Returns true if the state is marked as visited by this
 		 * state inspector.
-		 * @param indegree An array with the number of free edges for
+		 * @param state An array with the number of free edges for
 		 * each vertex.
+		 * @return True if the state has been visited, false otherwise.
 		 */
-		public boolean isVisited(int[] indegree) {
-			return visitedStates.contains(getState(indegree));
-		}
-		
+		public boolean isVisited(int[] state);
 		/**
 		 * Mark a state as visited.
-		 * @param indegree An array with the number of free edges for
+		 * @param state An array with the number of free edges for
 		 * each vertex.
 		 */
-		public void markAsVisited(int[] indegree) {
-			visitedStates.add(getState(indegree));
+		public void markAsVisited(int[] state);
+	}
+	
+	/**
+	 * A probabilistic state inspector with small fault rate, O(1) lookup, and low memory usage.
+	 * @author Bastian Fredriksson
+	 */
+	private class ProbabilisticStateInspector implements StateInspector {
+		private BloomFilter<String> visitedStates;
+		
+		/** 
+		 * Create a new probabilistic state inspector without any stored states.
+		 * @param vertexCount The number of vertices in the graph.
+		 */
+		public ProbabilisticStateInspector(int vertexCount) {
+			visitedStates = new BloomFilter<String>(0.001, (int) Math.pow(2, vertexCount));
+		}
+		
+		@Override
+		public boolean isVisited(int[] state) {
+			return visitedStates.contains(getState(state));
+		}
+		
+		@Override
+		public void markAsVisited(int[] state) {
+			visitedStates.add(getState(state));
 		}
 		
 		/**
 		 * Convert an array containing indegree for vertices into
 		 * a string with indices of decontaiminated vertices.
 		 */ 
-		private String getState(int[] indegree) {
+		private String getState(int[] state) {
 			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < indegree.length; i++) {
-				if (indegree[i] == 0) {
+			for (int i = 0; i < state.length; i++) {
+				if (state[i] == 0) {
 					sb.append(i);
 				}
 			}
 			return sb.toString();
+		}
+	}
+	
+	/**
+	 * An indexed state inspector with O(1) lookup and exponential memory usage.
+	 * @author Edvin Lundberg
+	 * @author Bastian Fredriksson
+	 */
+	private class IndexedStateInspector implements StateInspector {
+		boolean[] visitedStates;
+		
+		public IndexedStateInspector(int vertexCount) {
+			visitedStates = new boolean[(int) Math.pow(2, vertexCount)];
+		}
+
+		@Override
+		public boolean isVisited(int[] state) {
+			return visitedStates[getIndex(state)];
+		}
+
+		@Override
+		public void markAsVisited(int[] state) {
+			visitedStates[getIndex(state)] = true;
+		}
+		
+		private int getIndex(int[] state) {
+			int index = 0;
+			for (int i = 0; i < state.length; i++) {
+				if (state[state.length-1-i] == 0) {
+					index += Math.pow(2, i);
+				}
+			}
+			return index;
 		}
 	}
 	
@@ -145,14 +182,6 @@ public class Heuristics {
 		 */
 		public int getPursuerCount() {
 			return pursuerCount;
-		}
-		
-		/**
-		 * Returns an array of vertices to be decontaminated
-		 * at the day given as argument.
-		 */
-		public int[] getVertices(int day) {
-			return strategy.get(day);
 		}
 		
 		/**
@@ -303,6 +332,9 @@ public class Heuristics {
 						System.exit(1);
 					}
 				}
+			} else if (args[i++].equals("-d")) {
+				//--------------- ENABLE DEBUGGING ----------------//
+				DEBUG = true;
 			} else {
 				//----------------- UNKNOWN FLAG -----------------//
 				System.err.println("Unknown flag " + args[i]);
@@ -341,6 +373,13 @@ public class Heuristics {
 			io.println("The solution is not winning.");
 		}
 		io.close();
+	}
+	
+	private StateInspector getStateInspector(StateInspectorType type, int vertexCount) {
+		if (type == StateInspectorType.BLOOM_FILTER) return new ProbabilisticStateInspector(vertexCount);
+		if (type == StateInspectorType.ARRAY) return new IndexedStateInspector(vertexCount);
+		
+		return null;
 	}
 	
 	/**
@@ -409,7 +448,7 @@ public class Heuristics {
 					pursuerCount,
 					strongComponent.getIndegree(),
 					strongComponent.getIndegree(),
-					new StateInspector(strongComponent.getVertexCount(), StateInspectorType.BLOOMFILTER),
+					getStateInspector(StateInspectorType.BLOOM_FILTER, strongComponent.getVertexCount()),
 					new int[pursuerCount],
 					0
 			);
@@ -468,6 +507,7 @@ public class Heuristics {
 				/* This vertex is decontaminated already, no need to put pursuer here */
 				continue;
 			}
+			
 			d("Testing vertex " + vertex, depth);
 			
 			/* Remember which vertex we put a pursuer on */
@@ -502,16 +542,32 @@ public class Heuristics {
 		return null;
 	}
 	
+	/**
+	 * Calculates the next state based on the previous state. The next state
+	 * will be equal to the first state with indegree reduced for vertices which
+	 * are neighbours to decontaminated vertices in previous state.
+	 * @param state The previous state.
+	 * @param strongComponent A strongly connected graph.
+	 * @return The next state given after a transition.
+	 */
 	private int[] transition(int[] state, Graph strongComponent) {
 		int[] nextState = strongComponent.getIndegree();
 		for (int vertex = 0; vertex < state.length; vertex++) {
-			if (state[vertex]==0){
+			if (state[vertex] == 0) {
 				blockEdges(strongComponent, vertex, nextState);
 			}
 		}
 		return nextState;
 	}
-
+	
+	/**
+	 * Decontaminate a vertex by setting its indegree to zero and reduce indegree 
+	 * for all its neighbours in the next state by one.
+	 * @param currentState The state where decontamination should occur.
+	 * @param nextState The state in which incoming edges should be blocked.
+	 * @param vertex The vertex to decontaminate.
+	 * @param strongComponent A strongly connected graph.
+	 */
 	private void decontaminate(int[] currentState, int[] nextState, int vertex, Graph strongComponent) {
 		currentState[vertex] = 0;
 		blockEdges(strongComponent, vertex, nextState);
@@ -531,21 +587,6 @@ public class Heuristics {
 		return state;
 	}
 	
-	/**
-	 * Remeasure the number of free edges for each vertex given a transition between two 
-	 * states. Since this is when the monk moves, recontamination can occur.
-	 * This method works with a copy of the state, and leaves the original untouched.
-	 */
-	private int[] recontaminate(Graph strongComponent, int[] state) {
-		int[] nextState = strongComponent.getIndegree();
-		for (int i = 0; i < state.length; i++) {
-			if (state[i] == 0) {
-				blockEdges(strongComponent, i, nextState);
-			}
-		}
-		return nextState;
-	}
-
 	/**
 	 * Returns a list of contaminated vertices, with at most staticPursuers + 1 elements.
 	 */
@@ -591,6 +632,6 @@ public class Heuristics {
 	}
 	
 	private void d(String msg) {
-		System.err.println(msg);
+		d(msg, 0);
 	}
 }
