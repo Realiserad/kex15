@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
+import java.util.TreeSet;
 
 /**
  * An immutable representation of a directed graph 
@@ -354,7 +356,7 @@ public class Graph {
 	 * order in which the components needs to be decontaminated.
 	 * @return A vector of strongly connected components
 	 */
-	public Graph[] getStrongComponents() {
+	public List<Graph> getStrongComponents() {
 		/* comp[v] describes the component that v belongs to, and zero if v belongs to no component so far */
 		int[] comp = new int[getVertexCount()]; 
 
@@ -406,7 +408,7 @@ public class Graph {
 	 * @param A partioning of this graph
 	 * @return A list of subgraphs sorted in topological order
 	 */
-	private Graph[] getSubgraphs(List<Integer>[] partitions) {
+	private List<Graph> getSubgraphs(List<Integer>[] partitions) {
 		// The number of partitions, equal to the number of subgraphs
 		int partitionCount = partitions.length;
 		// A queue of subgraphs, will be sorted later
@@ -419,7 +421,7 @@ public class Graph {
 		 * Each vertex in this graph is a partition and an edge means that the partitions
 		 * have a common element.
 		 * topologicalOrder.get(u).contains(v) is true if exists an edge v->u, i.e if
-		 * the partition v supercedes the partition u in the topological ordering.
+		 * the partition v supersedes the partition u in the topological ordering.
 		 */
 		ArrayList<HashSet<Integer>> topologicalOrder = new ArrayList<HashSet<Integer>>();
 		for (int i = 0; i < partitionCount; i++) topologicalOrder.add(new HashSet<Integer>());
@@ -458,29 +460,61 @@ public class Graph {
 			}
 			subgraphs.add(new Graph(matrix, newToOldTranslator));
 		}
-
-		// The vector of subgraphs sorted in topological order
-		Graph[] sorted = new Graph[partitionCount];
-		int next = -1;
-		boolean[] selected = new boolean[partitionCount];
-		while (true) {
-			for (int i = 0; i < partitionCount; i++) {
-				if (topologicalOrder.get(i).isEmpty() && !selected[i]) {
-					// This subgraph has no incoming edges, place it into the next available bucket
-					sorted[++next]=subgraphs.get(i);
-					selected[i] = true;
-					// Remove all edges originating from vertex i
-					for (HashSet<Integer> set : topologicalOrder) set.remove(i);
-				}
+		
+		/* component[i] contains the component number for vertex i */ 
+		int[] component = new int[this.getVertexCount()];
+		for (int compNumber = 0; compNumber < partitionCount; compNumber++) {
+			for (int vertex : partitions[compNumber]) {
+				component[vertex] = compNumber;
 			}
-			// No subgraph left to process
-			break;
 		}
 		
-		// Assert all subgraphs has a topological order
-		assert(next==partitionCount-1);
+		/* create DAG where each vertex is a component from the original graph */
+		// Adjacency list for DAG, +1 for supernode
+		ArrayList<TreeSet<Integer>> dag = new ArrayList<TreeSet<Integer>>(partitionCount);
+		for (int i = 0; i < partitionCount; i++) dag.add(new TreeSet<Integer>());
+		for (List<Integer> partition : partitions) {
+			for (int vertex : partition) {
+				for (int neighbour : this.getNeighbours(vertex)) {
+					if (component[neighbour] != component[vertex]) {
+						dag.get(component[vertex]).add(component[neighbour]);
+					}
+				}
+			}
+		}
+		
+		/* Use DFS search to create topological order. */
+		Stack<Integer> stack = new Stack<Integer>();
+		boolean[] visited = new boolean[partitionCount];
+		for (int c = 0 ; c < partitionCount; c++) {
+			dfsTopological(stack, visited, c, dag);
+		}
+		LinkedList<Graph> sorted = new LinkedList<Graph>();
+		Integer compNumber = null;
+		while (!stack.isEmpty()) {
+			compNumber=stack.pop();
+			sorted.addLast(subgraphs.get(compNumber));
+		}
 		
 		return sorted;
+	}
+
+	/**
+	 * Create topological order by depth first search.
+	 * The topological order is obtained by popping the returned stack.
+	 */
+	private Stack<Integer> dfsTopological(Stack<Integer> stack, boolean[] visited, int vertex,ArrayList<TreeSet<Integer>> dag) {
+		if (visited[vertex]) {
+			return stack;
+		}
+		visited[vertex] = true;
+		
+		for (int neighbour : dag.get(vertex)) {
+			dfsTopological(stack, visited, neighbour, dag);
+		}
+				
+		stack.push(vertex);
+		return stack;		
 	}
 
 	/**
@@ -568,8 +602,22 @@ public class Graph {
 	 */
 	@Override
 	public String toString() {
-		if (this.getEdgeCount() == 0) return "no edges\n";
 		StringBuilder sb = new StringBuilder();
+		
+		/* Print vertices */
+		sb.append("[");
+		for (int i = 0; i < neighbours.size(); i++) {
+			sb.append(this.translate(i));
+			if (i != neighbours.size() - 1) {
+				sb.append(", ");
+			}
+		}
+		sb.append("]\n");
+		
+		/* Print edges */
+		if (this.getEdgeCount() == 0) {
+			sb.append("no edges\n");
+		}
 		for (int i = 0; i < neighbours.size(); i++) {
 			LinkedList<Integer> queue = neighbours.get(i);
 			if (queue.isEmpty()) continue;

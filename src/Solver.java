@@ -128,7 +128,7 @@ public class Solver {
 		this.gbig = g;
 
 		/* Get strong components */
-		Graph[] queue = g.getStrongComponents();
+		List<Graph> queue = g.getStrongComponents();
 
 		/* Solve each component separately */
 		LinkedList<LinkedList<int[]>> solutions = new LinkedList<LinkedList<int[]>>();

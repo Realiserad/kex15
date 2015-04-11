@@ -195,7 +195,8 @@ public class BloomFilter<E> implements Serializable {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final BloomFilter<E> other = (BloomFilter<E>) obj;        
+        @SuppressWarnings("unchecked")
+		final BloomFilter<E> other = (BloomFilter<E>) obj;        
         if (this.expectedNumberOfFilterElements != other.expectedNumberOfFilterElements) {
             return false;
         }
