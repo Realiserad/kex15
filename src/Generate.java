@@ -12,14 +12,14 @@ import java.util.Random;
  * -------------------------------------------------------------------------|
  * Usage: java Generate [options]                                           |
  * -------------------------------------------------------------------------|
- * option									       |	default             |
- * --batch N : Create N random graphs		       |	no batch (N=1)	    |
+ * option                                          |    default             |
+ * --batch N : Create N random graphs              |    no batch (N=1)      |
  * --nodes X Y : Graphs created will have at       |    X=4 and Y=1000      |
  *   least X nodes and at most Y nodes.            |                        |
- * --rand P : A number between 1 and 100.	       |	P=100               |
+ * --rand P : A number between 1 and 100.          |    P=100               |
  *   1 means cyclic and 100 means completely       |                        |
  *   random.                                       |                        |
- * --file Output test files to disk.		       |	stdout              |
+ * --file Output test files to disk.               |    stdout              |
  *   The test files will be named                  |                        |
  *   test01, test02... testN and stored in         |                        |
  *   the current directory.                        |                        |
@@ -38,7 +38,7 @@ public class Generate {
 			this.b = b;
 		}
 	}
-	
+
 	private static int batch = 1;
 	private static int nodeLower = 4;
 	private static int nodeUpper = 1000;
@@ -46,7 +46,7 @@ public class Generate {
 	private static boolean file = false;
 	private static boolean asEdges = false;
 	private ArrayList<Edge> edges;
-	
+
 	public static void main(String[] args) {
 		/* Parse options */
 		for (int i = 0; i < args.length; i++) {
@@ -80,8 +80,8 @@ public class Generate {
 		/* Generate */
 		new Generate();
 	}
-	
-	public Generate() {		
+
+	public Generate() {                
 		Random r = new Random();
 		for (int i = 0; i < batch; i++) {
 			int nodes = r.nextInt(nodeUpper-nodeLower) + nodeLower;
@@ -136,7 +136,7 @@ public class Generate {
 			System.err.println(e.getMessage());
 		}
 	}
-	
+
 	private String edgeString(int[][] m) {
 		StringBuilder sb = new StringBuilder();
 		for (int col = 0; col < m.length; col++) {
@@ -160,7 +160,7 @@ public class Generate {
 			System.out.print(matrixString(m));
 		}
 	}
-	
+
 	/**
 	 * Return the string representation of a square matrix "m".
 	 */
