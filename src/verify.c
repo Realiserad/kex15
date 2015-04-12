@@ -69,16 +69,17 @@ int main() {
 					return 0;
 				}
 			} else {
-				sn&=~(1<<(64-j));
+				sn &= ~(1 << (64 - j));
 			}
 		}
 		/* radd */
 		sn |= l;
 
-		s=sn;
-		sn=0;
-		bc=0;
+		s = sn;
+		sn = 0;
+		bc = 0;
 	}
+
 	printf("NO");
 	return 0;
 }
