@@ -72,6 +72,11 @@ public class GreedySelector implements Selector {
 			}
 		}
 		
+		// Sometimes we may have to place a pursuer on a already decontaminated vertex.
+		if (maxHeap.heapsize()==0) {
+			maxHeap.insert(new Vertex(0,0));
+		}
+		
 		return maxHeapToList(maxHeap);
 	}
 

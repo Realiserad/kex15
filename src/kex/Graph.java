@@ -218,7 +218,7 @@ public class Graph {
 
 	/**
 	 * Depth-first traversal of this graph used to find a path v_0, v_1... v_k in Edvin's
-	 * conjecture.
+	 * estimate.
 	 * @param v_i The current vertex.
 	 * @param x The indegree of v_0.
 	 * @param i Number of steps taken in this depth-first traversal.
@@ -333,7 +333,7 @@ public class Graph {
 		int partitionNumber = 0;
 		for (Set<Integer> partition : partitions) {
 			Integer[] partitionArray = partition.toArray(new Integer[partition.size()]);
-			
+						
 			/* Create translation table */
 			int[] newToOldTranslator = new int[partition.size()];
 			int newIndex = 0;

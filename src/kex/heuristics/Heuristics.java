@@ -145,7 +145,6 @@ public class Heuristics {
 		d("Number of strong components: " + strongComponents.size());
 		/* A list of strategies for each stable component */
 		LinkedList<Strategy> strategies = new LinkedList<Strategy>();
-		
 		/* Solve each strong component separately */
 		for (Graph strongComponent : strongComponents) {
 			d("Number of nodes: " + strongComponent.getVertexCount());
@@ -157,7 +156,7 @@ public class Heuristics {
 			}
 			int lowerBound = strongComponent.getLowerBound();
 			int upperBound = strongComponent.getUpperBound();
-			Strategy strategy = linearSearch(lowerBound, upperBound, strongComponent);
+			Strategy strategy = binarySearch(lowerBound, upperBound, strongComponent);
 			strategies.add(strategy);
 		}
 		
@@ -194,6 +193,58 @@ public class Heuristics {
 		return null;
 	}
 	
+	/**
+	 * Perform a binary search for the search number of a strong component
+	 * given as third argument.
+	 * @param lower The lower bound where the linear search starts.
+	 * @param upper The upper bound where the linear search stops.
+	 * @param estimate Edvin's estimate between lower and upper
+	 * @param g A strongly connected graph to decontaminate.
+	 * @return A winning strategy for g or null.
+	 */
+	private Strategy binarySearch(int lower, int upper, Graph strongComponent) {
+		
+		Strategy bestStrategy = null;
+		Strategy nextStrategy = null;
+		/* Start at estimate value */
+		int p = strongComponent.getEstimate();
+		int prevP = p+1; // Previous value of p, when not changing we have a solution
+		assert(p<=upper && p >= lower);
+		
+		/* Perform binary search */
+		while (p != prevP) {
+			e("Trying with "+p+" pursuers.");
+			nextStrategy = solve(
+					strongComponent, 
+					getSelector(SelectorType.GREEDY),
+					p, 
+					p,
+					strongComponent.getIndegree(),
+					strongComponent.getIndegree(),
+					getStateInspector(StateInspectorType.BLOOM_FILTER, strongComponent.getVertexCount()),
+					new int[p],
+					0
+			);
+			
+			if (nextStrategy != null) {
+				e("Successful.");
+				bestStrategy = nextStrategy;
+				upper = p;
+			} else {
+				e("Failed.");
+				lower = p+1;
+			}
+			prevP = p;
+			p = (lower+upper)/2;	
+		}
+		assert(bestStrategy != null);
+		return bestStrategy;
+	}
+	
+	private void e(String string) {
+		System.out.println(string);
+	}
+
 	/**
 	 * Calculate the next state in a recursive manner until all vertices are decontaminated, whereby
 	 * this method returns a strategy by backtracking.
@@ -236,12 +287,7 @@ public class Heuristics {
 		/* Continue the pursuit by positioning pursuers at the next available positions. */
 		for (int vertex : pursueOrder) {
 			assert(currentState[vertex] >= 0);
-			
-			if (currentState[vertex] == 0) {
-				/* This vertex is decontaminated already, no need to put pursuer here */
-				continue;
-			}
-			
+						
 			d("Testing vertex " + vertex, depth);
 			
 			/* Remember which vertex we put a pursuer on */
