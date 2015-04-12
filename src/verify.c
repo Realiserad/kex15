@@ -49,10 +49,10 @@ int main() {
 	fscanf(stdin, "%d %d", &p, &len);
 
 	for (int i = 0; i < len + 1; i++) {
-		l=0;
-		for (int i=0; i<p; i++) {
+		l = 0;
+		for (int i = 0; i < p; i++) {
 			fscanf(stdin, "%d", &buf[0]);
-			l|=(1<<(64-buf[0]));
+			l |= (1 << (64 - buf[0]));
 		}
 
 		/* Print the next state */
@@ -69,16 +69,17 @@ int main() {
 					return 0;
 				}
 			} else {
-				sn&=~(1<<(64-j));
+				sn &= ~(1 << (64 - j));
 			}
 		}
 		/* radd */
 		sn |= l;
 
-		s=sn;
-		sn=0;
-		bc=0;
+		s = sn;
+		sn = 0;
+		bc = 0;
 	}
+
 	printf("NO");
 	return 0;
 }
