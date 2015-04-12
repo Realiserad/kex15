@@ -49,10 +49,10 @@ int main() {
 	fscanf(stdin, "%d %d", &p, &len);
 
 	for (int i = 0; i < len + 1; i++) {
-		l=0;
-		for (int i=0; i<p; i++) {
+		l = 0;
+		for (int i = 0; i < p; i++) {
 			fscanf(stdin, "%d", &buf[0]);
-			l|=(1<<(64-buf[0]));
+			l |= (1 << (64 - buf[0]));
 		}
 
 		/* Print the next state */
