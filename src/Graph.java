@@ -3,335 +3,243 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import org.jgrapht.alg.StrongConnectivityInspector;
+import org.jgrapht.alg.cycle.JohnsonSimpleCycles;
+import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+
 /**
- * An immutable representation of a directed graph 
- * with vertices and edges. Self loops allowed but not multiple edges.
- *
+ * Wrapper class for DefaultDirectedGraph. Contains functionality for finding
+ * strongly connected components, calculating the adjacency matrix, finding
+ * cycles, and translating vertex labels between graphs.
+ * 
  * @author Bastian Fredriksson
  * @author Edvin Lundberg
- * @version 2015-04-08
  */
 public class Graph {
-	private ArrayList<LinkedList<Integer>> neighbours;
-	private int vertexCount, edgeCount;
-	private int lowerBoundPursuers;
-	private int upperBoundPursuers;
-	private int[] indegree;
-	private int[] translator; //Translates vertex indices to indices for whole graph. Used for components.
+	private DefaultDirectedGraph<Integer, DefaultEdge> graph;
+	private ArrayList<LinkedList<Integer>> adjacencyList;
+	private int lowerBound, upperBound, estimate;
+	private int[] indegree, translator;
 
 	/**
-	 * Create a graph from a neighbour matrix "m".
-	 * The matrix given as first argument should contain
-	 * a one on position m[i][j] if there is an edge j->i
-	 * and zero otherwise.
-	 * @param newToOldTranslator 
+	 * Create a new graph from an adjacency list.
+	 * @param adjacencyList A list containing the neighbours for each vertex.
 	 */
-	public Graph(int[][] m) {
-		this.vertexCount = m.length;
-		/* Create neighbour list */
-		neighbours = new ArrayList<LinkedList<Integer>>(m.length);
-		for (int i=0; i<m.length; i++) {
-			neighbours.add(new LinkedList<Integer>());
-		}
-		for (int row=0; row<m.length; row++) {
-			for (int col=0; col<m.length; col++) {
-				if (m[row][col] == 1) {
-					// Add edge col->row
-					neighbours.get(col).add(row);
-					edgeCount++;
+	public Graph(ArrayList<LinkedList<Integer>> adjacencyList) {
+		this.graph = buildGraph(adjacencyList);
+		this.adjacencyList = adjacencyList;
+	}
+	
+	/**
+	 * Create a new subgraph from an adjacency list and a translator
+	 * given as arguments.
+	 */
+	public Graph(ArrayList<LinkedList<Integer>> adjacencyList, int[] translator) {
+		this.graph = buildGraph(adjacencyList);
+		this.adjacencyList = adjacencyList;
+		this.translator = translator;
+	}
+
+	/**
+	 * Create a new graph from an adjacency matrix.
+	 * @param adjacencyMatrix A matrix M with M[v][u]=1 if
+	 * there is an edge u->v and zero otherwise.
+	 */
+	public Graph(int[][] adjacencyMatrix) {
+		/* Create adjacency list */
+		ArrayList<LinkedList<Integer>> adjacencyList = new ArrayList<LinkedList<Integer>>(adjacencyMatrix.length);
+		for (int i = 0; i < adjacencyMatrix.length; i++) adjacencyList.add(new LinkedList<Integer>());
+		for (int v = 0; v < adjacencyMatrix.length; v++) {
+			for (int u = 0; u < adjacencyMatrix.length; u++) {
+				if (adjacencyMatrix[v][u] == 1) {
+					adjacencyList.get(u).add(v);
 				}
 			}
 		}
-		this.lowerBoundPursuers = 0; // Initial lower bound
+
+		this.graph = buildGraph(adjacencyList);
+		this.adjacencyList = adjacencyList;
 	}
-	
+
 	/**
-	 * Create a graph from a neighbour matrix "m".
-	 * The matrix given as first argument should contain
-	 * a one on position m[i][j] if there is an edge j->i
-	 * and zero otherwise.
-	 * @param newToOldTranslator translates new vertex indices to old (whole graph) indices.
+	 * Build a directed graph from an adjacency list.
+	 * @return A directed graph.
 	 */
-	public Graph(int[][] m, int[] newToOldTranslator) {
-		this(m);
-		this.translator = newToOldTranslator;
-	}
-	
-	/**
-	 * Create a graph from a adjacency list "neighbours".
-	 * neighbours.get(i) should contain all neighbours to vertex i
-	 */
-	public Graph(ArrayList<LinkedList<Integer>> neighbours) {
-		this.neighbours = neighbours;
-		this.vertexCount = neighbours.size();
-		this.lowerBoundPursuers = 0;
-	}
-	
-	/**
-	 * Get the adjacency list.
-	 */
-	public ArrayList<LinkedList<Integer>> getAdjacencyList() {
-		return neighbours;
+	private DefaultDirectedGraph<Integer, DefaultEdge> buildGraph(ArrayList<LinkedList<Integer>> adjacencyList) {
+		DefaultDirectedGraph<Integer, DefaultEdge> mGraph = new DefaultDirectedGraph<Integer, DefaultEdge>(DefaultEdge.class);
+
+		/* Add vertices */
+		for (int vertex = 0; vertex < adjacencyList.size(); vertex++) {
+			mGraph.addVertex(vertex);
+		}
+
+		/* Add edges u->v */
+		for (int u = 0; u < adjacencyList.size(); u++) {
+			for (int v : adjacencyList.get(u)) {
+				mGraph.addEdge(u, v);
+			}
+		}
+
+		return mGraph;
 	}
 
 	/**
 	 * Get the number of vertices for this graph.
+	 * @return The number of vertices.
 	 */
 	public int getVertexCount() {
-		return vertexCount;
+		return this.adjacencyList.size();
 	}
 
 	/**
-	 * Get the number of edges in this graph.
+	 * Calculate the adjacency matrix M for this graph. M[v][u]=1 if
+	 * there is an edge u->v and zero otherwise. 
 	 */
-	public int getEdgeCount() {
-		return edgeCount;
+	public int[][] getAdjacencyMatrix() {
+		int[][] M = new int[this.getVertexCount()][this.getVertexCount()];
+		for (int u = 0; u < this.getVertexCount(); u++) {
+			for (int v : this.getNeighbours(u)) {
+				M[v][u] = 1;
+			}
+		}
+		return M;
 	}
-	
+
 	/**
-	 * Get all neighbours for a vertex.
+	 * Get a list of all neighbours to the vertex given as argument.
+	 * @param vertex The vertex whose neighbours should be sought.
+	 * @return A list of neighbours.
 	 */
 	public LinkedList<Integer> getNeighbours(int vertex) {
-		return neighbours.get(vertex);
+		return this.adjacencyList.get(vertex);
 	}
 
 	/**
-	 * Get all cycles in this graph.
+	 * Determine if this graph is a singleton graph.
+	 * @return True if the graph consists of exactly one vertex, false otherwise.
 	 */
-	public ArrayList<LinkedList<Integer>> getCycles() {
-		// visited[v] is true if vertex v has been visited during current dfs
-		boolean[] visited = new boolean[vertexCount];
-		// traversed[vertexCount*u+v] is true if the edge u->v has been traversed during any dfs
-		boolean[] traversed = new boolean[vertexCount*vertexCount];
-		// path contains the path traveled during current dfs
-		LinkedList<Integer> path = new LinkedList<Integer>();
-		// list of all cycles found
-		ArrayList<LinkedList<Integer>> cycles = new ArrayList<LinkedList<Integer>>();
-		for (int vertex=0; vertex<vertexCount; vertex++) {
-			for (int neighbour : neighbours.get(vertex)) {
-				if (traversed[vertex*vertexCount+neighbour]) continue;
-				// Start new dfs with vertex as start node
-				Arrays.fill(visited, false);
-				path.clear();
-				visited[vertex] = true;
-				path.add(vertex);
-				dfs(vertex, neighbour, visited, traversed, path, cycles);
-			}
-		}
-		return cycles;
-	}
-
-	private void dfs(int previous, int current, boolean[] visited, boolean[] traversed, LinkedList<Integer> path, ArrayList<LinkedList<Integer>> cycles) {
-		// Mark the edge which lead here as traversed
-		traversed[previous*vertexCount+current] = true;
-		// Check if we have a cycle
-		if (visited[current]) {
-			path.addLast(current);
-			cycles.add(extractCycle(path));
-			return;
-		}
-		// Continue dfs
-		visited[current] = true;
-		path.addLast(current);
-		for (int neighbour : neighbours.get(current)) {
-			dfs(current, neighbour, visited, traversed, path, cycles);
-		}
-		visited[current] = false;
-		path.removeLast();
+	public boolean isSingleton() {
+		return this.getVertexCount() == 1 ? true : false;
 	}
 
 	/**
-	 * Return the cycle in a path.
+	 * Calculates a lower bound for the search number of this graph.
+	 * @return A lower bound for the search number.
 	 */
-	private LinkedList<Integer> extractCycle(LinkedList<Integer> path) {
-		int tail = path.removeLast(); // The cycle should end in this vertex
-		LinkedList<Integer> cycle = new LinkedList<Integer>();
-		Iterator<Integer> it = path.descendingIterator(); // Iterator in reverse order
-		while (it.hasNext()) {
-			int vertex = it.next();
-			cycle.add(vertex);
-			if (vertex == tail) {
-				return cycle;
-			}
+	public int getLowerBound() {
+		/* Return previously calculated lower bound, if it exists */
+		if (this.lowerBound != 0) {
+			return this.lowerBound;
 		}
 
-		return null;
-	}
-
-	/**
-	 * Intersect two lists and return the result as a set, i.e return a set
-	 * containing the element which resides in both lists.
-	 */
-	public HashSet<Integer> intersect(LinkedList<Integer> a, LinkedList<Integer> b) {
-		HashSet<Integer> s1 = new HashSet<Integer>(a);
-		HashSet<Integer> s2 = new HashSet<Integer>(b);
-		s1.retainAll(s2);
-		return s1;
-	}
-	
-	/**
-	 * Get a lower bound, that is, a positive number where the graph can not be solved with less pursuers than returned number.
-	 * @return A lower bound for the number of pursuers needed, it can't be done with less than returned value.
-	 */
-	public int getLowerBoundNrOfPursuers() {
-		getIndegree();
-		//The minimum indegree is a lower bound because we must have that many pursuers to make any progress at all.
-		int min = Integer.MAX_VALUE;
-		for (int i = 0; i < indegree.length; i++) {
-			if (indegree[i] < min) min = indegree[i];
-		}
-		
-		return Math.max(1, min);
-	}
-	
-	public int[] getIndegree() {
+		/* Check if indegree already calculated */
 		if (this.indegree == null) {
-			indegree = new int[this.getVertexCount()];
-			for (LinkedList<Integer> neighbourSet : neighbours) {
-				for (int neighbour : neighbourSet) {
-					this.indegree[neighbour]++;
-				}
-			}
+			getIndegree();
 		}
-		return Solver.copy(indegree);
+
+		this.lowerBound = Math.max(1, min(indegree));
+		return this.lowerBound;
+	}
+
+	public int getUpperBound() {
+		/* Return previously calculated, if it exists */
+		if (this.upperBound != 0) {
+			return this.upperBound;
+		}
+
+		// TODO
+		this.upperBound = this.getVertexCount();
+		return this.upperBound;
 	}
 
 	/**
-	 * Use the "Edvin-estimate" to calculate a lower bound for the minimum number of pursuers needed. 
-	 * @return A lower bound for the number of pursuers needed.
+	 * Calculates an estimate of the search number based on Edvin's estimate.
+	 * The estimate E returned is in the interval getLowerBound() <= E <= getUpperBound().  
+	 * @return An estimate of the search number.
 	 */
-	public int getEstimateNrOfPursuers() {
-		// If already calculated lower bound, return it 
-		if (this.lowerBoundPursuers != 0) {
-			return this.lowerBoundPursuers;
+	public int getEstimate() {
+		/* Return previously calculated estimate, if it exists */
+		if (estimate != 0) {
+			return this.estimate;
 		}
 
-		/* Recall that:
-		 * The matrix given as first argument should contain
-		 * a one on position m[i][j] if there is an edge j->i
-		 * and zero otherwise.
-		 */
-		getIndegree();
-		
-		// Array of vertices which we will sort based on in-degree 
-		Integer[] vertices = new Integer[vertexCount];
-		for (int i = 0; i<vertices.length; i++) {
+		/* Check if indegree already calculated */
+		if (this.indegree == null) {
+			getIndegree();
+		}
+
+		Integer[] vertices = new Integer[this.getVertexCount()];
+		for (int i = 0; i < vertices.length; i++) {
 			vertices[i] = i;
 		}
-
-		// Sort vertices in ascending order of in-degree
 		Arrays.sort(vertices, new Comparator<Integer>() {
-			/**
-			 * Compares its two arguments for order. 
-			 * Returns a negative integer, zero, or a positive
-			 * integer as the first argument is less than, equal 
-			 * to, or greater than the second.
-			 */
 			@Override
 			public int compare(Integer a, Integer b) {
 				return indegree[a]-indegree[b];
 			}
 		});
 
-		/*
-		 * Now the vertices array should be sorted on indegree and we traverse it from 
-		 * left to right. We process the vertices until one satisfies this condition:
-		 * 	Let v_0 be the vertex we are processing
-		 * 	Let x be v_0's indegree
-		 * 	Find a path leading out of v_0 [v_0,v_1,v_2,v_3,...,v_k] where 
-		 * 		indegree[v_i] <= x+i, 0<=i<=k
-		 * 		and 
-		 * 		indegree(v_k) == max(indegree)
-		 * 	
-		 */
-		int maxInDegree = indegree[indegree.length-1]; //Last element should have highest indegree
-		//This loop guarantees that lower bound will be found, if we are at the last vertex with
-		// highest indegree, a valid path is trivially found.
-		for (int i = 0; i<vertices.length; i++) {
-			int v_0 = vertices[i];
-			int x = indegree[v_0];
-			if (validEstimatePathExists(v_0, x, maxInDegree, indegree)) {
-				this.lowerBoundPursuers = x; //We need x pursuers to start by blocking v_0
+		int maxIndegree = max(indegree);
+
+		/* Process vertices with low indegree first. */
+		for (int i = 0; i < this.getVertexCount(); i++) {
+			int v_0 = vertices[i]; // Source vertex
+			int x = indegree[v_0]; // Indegree for source vertex
+			if (validEstimatePathExists(v_0, x, maxIndegree, indegree)) {
+				this.estimate = x;
 				break;
 			}
 		}
 
-		return Math.max(1, this.lowerBoundPursuers);
-	}
-	
-	/** 
-	 * Return an upper bound for the number of pursuers needed 
-	 */
-	public int getUpperBoundNrOfPursuers() {
-		if (upperBoundPursuers != 0) {
-			return upperBoundPursuers;
-		}
-		int[] indegree = getIndegree();
-		int max = Integer.MIN_VALUE;
-		for (int i : indegree) {
-			if (i > max) {
-				max = i;
-			}
-		}
-		upperBoundPursuers = max;
-		//return Math.max(upperBoundPursuers, 1);
-		return this.getVertexCount();
+		return Math.max(1, this.estimate);
 	}
 
 	/**
-	 * Check if a valid estimate path (of distinct vertices) exists which starts from v_0.
-	 * 
-	 * @param v_0 The vertex which the search starts from
-	 * @param x The indegree of v_0
-	 * @param maxInDegree The maximum indegree in the graph
-	 * @param indegree The array of indegrees of the vertices in the graph
-	 * @return True iff there exists a path leading out of v_0 [v_0,v_1,v_2,v_3,...,v_k] where 
-	 * 		indegree(v_i) <= x+i, 0<=i<=k
-	 * 		and 
-	 * 		indegree(v_k) == max(indegree).
+	 * Returns true if there exists a path v_0, v_1... v_k where 
+	 * indegree[v_i] <= x+i for 0 <= i <= k and indegree[v_k] == maxDegree.
+	 * @param v_0 The first vertex in the path.
+	 * @param x Indegree for v_0
+	 * @param maxDegree The maximum indegree for any vertex in the graph.
+	 * @param indegree An array with indegree for the vertices in the graph.
+	 * @return True if there exists a valid path according to Edvin's conjecture.
 	 */
-	private boolean validEstimatePathExists(int v_0, int x, int maxInDegree, final int[] indegree) {		
-		// Variant of dfs
-
-		// visited[v] is true if vertex v has been visited during current bfs
-		boolean[] visited = new boolean[vertexCount];
-		Arrays.fill(visited, false);
-		return dfsEstimate(v_0,x,0,maxInDegree, visited, indegree);
+	private boolean validEstimatePathExists(int v_0, int x, int maxIndegree, int[] indegree) {
+		return dfs(v_0, x, 0, maxIndegree, new boolean[this.getVertexCount()], indegree);
 	}
 
 	/**
-	 * If a valid path could be found from here, pathFound will be true.
-	 * 
-	 * @param v_i Current vertex 
-	 * @param x The indegree of v_0
-	 * @param i index in path
-	 * @param pathFound "Return"-value, check this after call.
-	 * @param maxDegree maxDegree in graph
-	 * @param visited Keep track of which vertices are visited, cycles are not allowed for this path
-	 * @param indegree array of indegrees of vertices
+	 * Depth-first traversal of this graph used to find a path v_0, v_1... v_k in Edvin's
+	 * conjecture.
+	 * @param v_i The current vertex.
+	 * @param x The indegree of v_0.
+	 * @param i Number of steps taken in this depth-first traversal.
+	 * @param maxIndegree Maximum indegree for the vertices in this graph.
+	 * @param visited An array with visited vertices.
+	 * @param indegree Array with indegree for the vertices in this graph.
 	 */
-	private boolean dfsEstimate(int v_i, int x, int i, int maxInDegree, boolean[] visited, final int[] indegree)  {
-		// Not valid path
-		if (!(indegree[v_i] <= x+i)) return false;
+	private boolean dfs(int v_i, int x, int i, int maxIndegree, boolean[] visited, int[] indegree)  {
+		if (visited[v_i] || indegree[v_i] > x+i) {
+			return false;
+		}
 
-		// Found valid path
-		if (indegree[v_i] == maxInDegree) {
+		if (indegree[v_i] == maxIndegree) {
+			/* v_k found */
 			return true;
 		}
 
-		// Continue search for valid path
+		/* Mark the current vertex as visited */
 		visited[v_i] = true;
 
-		for (int neighbor : neighbours.get(v_i)) {
-			if (!visited[neighbor]) {
-				boolean hasValidPath = dfsEstimate(neighbor, x, i+1, maxInDegree, visited, indegree);
-				if (hasValidPath) return true;
+		for (int neighbour : this.getNeighbours(v_i)) {
+			if (dfs(neighbour, x, i+1, maxIndegree, visited, indegree)) {
+				return true;
 			}
 		}
 
@@ -339,306 +247,253 @@ public class Graph {
 		visited[v_i] = false;
 		return false;
 	}
-	
-	public int[][] getAdjacencyMatrix() {
-		int[][] m = new int[this.getVertexCount()][this.getVertexCount()];
-		for (int i = 0; i < this.getVertexCount(); i++) {
-			for (int neighbour : neighbours.get(i)) {
-				// i --> neighbour
-				m[neighbour][i]=1;
+
+	/**
+	 * Returns the maximum element in an array of integers.
+	 * @param array The array to search.
+	 * @return The maximum value.
+	 */
+	private int max(int[] array) {
+		int max = Integer.MIN_VALUE;
+		for (int i = 0; i < array.length; i++) {
+			if (array[i] > max) {
+				max = array[i];
 			}
 		}
-		return m;
+		return max;
 	}
 
 	/**
-	 * Returns a list of maximal strong components for this graph. The list is sorted in the
-	 * order in which the components needs to be decontaminated.
-	 * @return A vector of strongly connected components
+	 * Returns the minimum element in an array of integers.
+	 * @param array The array to search.
+	 * @return The minimum value.
+	 */
+	private int min(int[] array) {
+		int min = Integer.MAX_VALUE;
+		for (int i = 0; i < array.length; i++) {
+			if (array[i] < min) {
+				min = array[i];
+			}
+		}
+		return min;
+	}
+
+	/**
+	 * Calculate and return the indegree for each vertex in this graph.
+	 * @return A copied array which on position i contains the indegree for vertex i.
+	 */
+	public int[] getIndegree() {
+		if (indegree == null) {
+			indegree = new int[getVertexCount()];
+			for (LinkedList<Integer> neighbourList : adjacencyList) {
+				for (int neighbour : neighbourList) {
+					indegree[neighbour]++;
+				}
+			}
+		}
+		return Arrays.copyOf(indegree, indegree.length);
+	}
+
+	/**
+	 * Intersect two lists and return the result as a list, i.e return a set
+	 * containing the elements which reside in both lists.
+	 */
+	public LinkedList<Integer> intersect(LinkedList<Integer> a, LinkedList<Integer> b) {
+		/* Create lookup set for one of the lists */
+		HashSet<Integer> lookup = new HashSet<Integer>(b);
+		LinkedList<Integer> intersection = new LinkedList<Integer>();
+		for (int i : a) {
+			if (b.contains(i)) {
+				intersection.add(i);
+			}
+		}
+		return intersection;
+	}
+
+	/**
+	 * Returns a list of strongly connected components in this graph, sorted
+	 * in topological order.
+	 * @return A list of strongly connected components sorted in topological
+	 * order.
 	 */
 	public List<Graph> getStrongComponents() {
-		/* comp[v] describes the component that v belongs to, and zero if v belongs to no component so far */
-		int[] comp = new int[getVertexCount()]; 
+		/* Find strongly connected components. */
+		StrongConnectivityInspector<Integer, DefaultEdge> sci = new StrongConnectivityInspector<Integer, DefaultEdge>(this.graph);
+		List<Set<Integer>> partitions = sci.stronglyConnectedSets();
+		
+		ArrayList<Graph> strongComponents = new ArrayList<Graph>(partitions.size());
+		List<Graph> orderedStrongComponents = new LinkedList<Graph>();
 
-		// Number of strongly connected components in graph
-		int numComponents = 0;
-
-		for (int v = 0; v < comp.length; v++) {
-			// If already in component, skip it
-			if (comp[v]!=0) continue;
-
-			numComponents++;
-			int compNumber = numComponents; //+1 to avoid confusion with "zero value= no component"
-			// Our component consists of v so far, try to expand 
-			comp[v] = compNumber;
-			buildStrongComponent(v, new boolean[comp.length], new LinkedList<Integer>(), comp, compNumber);
-		}
-
-		/* Topological ordering */
-		// One set for each component
-		@SuppressWarnings("unchecked")
-		List<Integer>[] comps = new LinkedList[numComponents];
-		for (int i = 0; i < comps.length; i++) {
-			comps[i] = new LinkedList<Integer>();
-		}
-		for (int v = 0; v < comp.length; v++) {
-			// Add v to the component it belongs to
-			comps[comp[v]-1].add(v);
-		}
-
-		/* Create subgraphs from the components above */
-		return getSubgraphs(comps);
-	}
-	
-	/** 
-	 * Returns true if this graph is a a singleton.
-	 * A singleton consists of one vertex.
-	 * @return True if the this graph consists of only one vertex
-	 */
-	public boolean isSingleton() {
-		return this.vertexCount == 1 ? true : false;
-	}
-
-	/**
-	 * Returns an array of subgraphs sorted in topological order.
-	 * Each subgraph is created from a partition of vertices from this
-	 * graph. More formally, if V(X) is the vertex set given from one of the
-	 * partitions X given as argument, then the subgraph (V, E) is a graph such 
-	 * that V=V(X) and E=(u,v) where u,v ∈ V(X).
-	 * @param A partioning of this graph
-	 * @return A list of subgraphs sorted in topological order
-	 */
-	private List<Graph> getSubgraphs(List<Integer>[] partitions) {
-		// The number of partitions, equal to the number of subgraphs
-		int partitionCount = partitions.length;
-		// A queue of subgraphs, will be sorted later
-		ArrayList<Graph> subgraphs = new ArrayList<Graph>(partitionCount);
-		// Create a set representation of each partition for O(1) lookup and removal
-		ArrayList<HashSet<Integer>> partitionSets = new ArrayList<HashSet<Integer>>();
-		for (int i = 0; i < partitionCount; i++) partitionSets.add(new HashSet<Integer>(partitions[i]));
-
-		/* Neighbour list for a DAG representing the topological order for the subgraphs.
-		 * Each vertex in this graph is a partition and an edge means that the partitions
-		 * have a common element.
-		 * topologicalOrder.get(u).contains(v) is true if exists an edge v->u, i.e if
-		 * the partition v supersedes the partition u in the topological ordering.
-		 */
-		ArrayList<HashSet<Integer>> topologicalOrder = new ArrayList<HashSet<Integer>>();
-		for (int i = 0; i < partitionCount; i++) topologicalOrder.add(new HashSet<Integer>());
-
-		for (int i = 0; i < partitionCount; i++) {
-			HashSet<Integer> currentSet = partitionSets.get(i);
-			List<Integer> currentPartition = partitions[i];
+		/* Create a DAG defining a topological order for the strongly connected components of this graph */
+		ArrayList<TreeSet<Integer>> DAG = new ArrayList<TreeSet<Integer>>(partitions.size());
+		for (int i = 0; i < partitions.size(); i++) DAG.add(new TreeSet<Integer>());
+		
+		int partitionNumber = 0;
+		for (Set<Integer> partition : partitions) {
+			Integer[] partitionArray = partition.toArray(new Integer[partition.size()]);
 			
-			/* Use a translator to translate new vertexname into original vertexname */
-			int[] newToOldTranslator = new int[currentSet.size()];
+			/* Create translation table */
+			int[] newToOldTranslator = new int[partition.size()];
 			int newIndex = 0;
-			for (int v : currentPartition) {
-				newToOldTranslator[newIndex]=v;
+			for (int vertex : partitionArray) {
+				newToOldTranslator[newIndex] = vertex;
 				newIndex++;
 			}
 			int[] oldToNewTranslator = new int[this.getVertexCount()];
 			Arrays.fill(oldToNewTranslator, -1);
-			for (int v = 0; v < newToOldTranslator.length; v++) {
-				oldToNewTranslator[newToOldTranslator[v]] = v;
+			for (int vertex = 0; vertex < newToOldTranslator.length; vertex++) {
+				oldToNewTranslator[newToOldTranslator[vertex]] = vertex;
 			}
 
-			// matrix[u][v]=1 if there is an edge v->u
-			int[][] matrix = new int[currentPartition.size()][currentPartition.size()];
-
-			for (int vertex : currentPartition) {
-				for (int neighbour : neighbours.get(vertex)) {
-					if (currentSet.contains(neighbour)) {
-						// The subgraph we're building should contain an edge vertex->neighbour
-						matrix[oldToNewTranslator[neighbour]][oldToNewTranslator[vertex]]=1;
+			/* Create strong component induced by the vertices in the partition */
+			ArrayList<LinkedList<Integer>> strongComponent = new ArrayList<LinkedList<Integer>>(partition.size());
+			for (int i = 0; i < partition.size(); i++) strongComponent.add(new LinkedList<Integer>());
+			for (int vertex : partitionArray) {
+				for (int neighbour : getNeighbours(vertex)) {
+					if (partition.contains(neighbour)) {
+						/* The edge vertex->neighbour belong to the strong component */
+						strongComponent.get(oldToNewTranslator[vertex]).add(oldToNewTranslator[neighbour]);
 					} else {
-						// The partition i has a common element with the partition in which
-						// the neighbour resides
-						topologicalOrder.get(getComponent(neighbour, partitionSets)).add(i);
+						/* This partition supersedes another partition in the topological order */
+						DAG.get(partitionNumber).add(getPartitionNumber(neighbour, partitions));
 					}
 				}
 			}
-			subgraphs.add(new Graph(matrix, newToOldTranslator));
+			strongComponents.add(new Graph(strongComponent, newToOldTranslator));
+			
+			partitionNumber++;
 		}
 		
-		/* component[i] contains the component number for vertex i */ 
-		int[] component = new int[this.getVertexCount()];
-		for (int compNumber = 0; compNumber < partitionCount; compNumber++) {
-			for (int vertex : partitions[compNumber]) {
-				component[vertex] = compNumber;
-			}
-		}
-		
-		/* create DAG where each vertex is a component from the original graph */
-		// Adjacency list for DAG, +1 for supernode
-		ArrayList<TreeSet<Integer>> dag = new ArrayList<TreeSet<Integer>>(partitionCount);
-		for (int i = 0; i < partitionCount; i++) dag.add(new TreeSet<Integer>());
-		for (List<Integer> partition : partitions) {
-			for (int vertex : partition) {
-				for (int neighbour : this.getNeighbours(vertex)) {
-					if (component[neighbour] != component[vertex]) {
-						dag.get(component[vertex]).add(component[neighbour]);
-					}
-				}
-			}
-		}
-		
-		/* Use DFS search to create topological order. */
+		/* Create topological order by depth-first traversal of the DAG */
 		Stack<Integer> stack = new Stack<Integer>();
-		boolean[] visited = new boolean[partitionCount];
-		for (int c = 0 ; c < partitionCount; c++) {
-			dfsTopological(stack, visited, c, dag);
+		boolean[] visited = new boolean[partitions.size()];
+		for (int i = 0 ; i < partitions.size(); i++) {
+			dfs(stack, visited, i, DAG);
 		}
-		LinkedList<Graph> sorted = new LinkedList<Graph>();
-		Integer compNumber = null;
 		while (!stack.isEmpty()) {
-			compNumber=stack.pop();
-			sorted.addLast(subgraphs.get(compNumber));
+			orderedStrongComponents.add(strongComponents.get(stack.pop()));
 		}
 		
-		return sorted;
+		return orderedStrongComponents;
 	}
 
-	/**
-	 * Create topological order by depth first search.
-	 * The topological order is obtained by popping the returned stack.
-	 */
-	private Stack<Integer> dfsTopological(Stack<Integer> stack, boolean[] visited, int vertex,ArrayList<TreeSet<Integer>> dag) {
-		if (visited[vertex]) {
-			return stack;
+	private int getPartitionNumber(int vertex, List<Set<Integer>> partitions) {
+		int partitionNumber = 0;
+		for (Set<Integer> partition : partitions) {
+			if (partition.contains(vertex)) {
+				return partitionNumber;
+			}
+			partitionNumber++;
 		}
-		visited[vertex] = true;
 		
-		for (int neighbour : dag.get(vertex)) {
-			dfsTopological(stack, visited, neighbour, dag);
-		}
-				
-		stack.push(vertex);
-		return stack;		
-	}
-
-	/**
-	 * Returns the the index of the strong component which contains the 
-	 * vertex given as first argument.
-	 * @return The index of the strong component or -1 if the vertex does not exist
-	 */
-	private Integer getComponent(int vertex, ArrayList<HashSet<Integer>> sets) {
-		for (int i = 0; i < sets.size(); i++) {
-			if (sets.get(i).contains(vertex)) return i;
-		}
 		return -1;
-	}
-
-	/**
-	 * Build the strong component which "vertex" belongs to. In a strong component, there is a path connecting all pairs 
-	 * of vertices in the component. 
-	 * 
-	 * @param visited The visited vertices.
-	 * @param path The path travelled so far.
-	 * @param comp comp[v]=the compNumber that v belongs to, 0 if not belonging to any component. Will be mutated.
-	 * @param compNumber The component number of this component.
-	 */
-	private void buildStrongComponent(int vertex, boolean[] visited, LinkedList<Integer> path, int[] comp, int compNumber) {
-		if (visited[vertex]) {
-			// I was already here yo
-			return;
-		}
-
-		visited[vertex] = true;
-		path.addLast(vertex);
-
-		// If returning to an "accepted" vertex, mark this path as "accepted", i.e. belonging to this component  
-		for (int neighbour : neighbours.get(vertex)) {
-			if (comp[neighbour] == compNumber) {
-				markPath(comp, compNumber, path);
-				break;
-			}
-		}
-
-		// Expand component further
-		for (int neighbour : neighbours.get(vertex)) {
-			if (comp[neighbour] != 0) {
-				// No need to search another component (we will never return to this component if we do)
-				// No need to check vertices already in this component
-				continue;
-			}
-			// Expand
-			buildStrongComponent(neighbour, visited, path, comp, compNumber);
-		}
-
-		path.removeLast();
-	}
-
-	/**
-	 * Mark the vertices in given path as belonging to the component with the compNumber 
-	 * given as the second parameter. 
-	 * 
-	 * @param comp This parameter will be mutated, vertices on their index will have value compNumber.
-	 * @param compNumber The component number of this component
-	 * @param path Path of vertices which has been proven to belong to this component.
-	 */
-	private void markPath(int[] comp, int compNumber, LinkedList<Integer> path) {
-		Iterator<Integer> it = path.descendingIterator();
-		while (it.hasNext()) {
-			int v = it.next();
-			if (comp[v] == compNumber) {
-				return;
-			}
-			comp[v] = compNumber;
-		}
 	}
 	
 	/**
-	 * Returns the string representation of this graph
-	 * terminated by newline.
-	 * Each line in the string consists of an edge on
-	 * the form 
-	 * <code>u --> v</code>
+	 * Create topological order by depth first search.
+	 * The topological order is obtained by popping the stack 
+	 * given as first parameter.
+	 */
+	private void dfs(Stack<Integer> stack, boolean[] visited, int vertex, ArrayList<TreeSet<Integer>> DAG) {
+		if (visited[vertex]) {
+			return;
+		}
+		visited[vertex] = true;
+		for (int neighbour : DAG.get(vertex)) {
+			dfs(stack, visited, neighbour, DAG);
+		}	
+		stack.push(vertex);		
+	}
+
+	/**
+	 * Returns the string representation of this graph.
+	 * 
+	 * The first line contains the vertices of this graph, 
+	 * e.g [1, 2, 3] followed by one or more edges
+	 * on the form u->v.
+	 * 
 	 * The edges are sorted in ascending order, such
-	 * that the edge (u, v) precedes (x, y) if u<x or
-	 * if u=x and v<y.
+	 * that the edge u->v precedes x->y if u < x or
+	 * if u == x and v < y.
+	 * 
+	 * The vertex labels are translated to
+	 * indices for the whole graph before they are
+	 * printed.
+	 * 
 	 * Time complexity: O(|V|*|E|*log(|E|))
-	 * @return A string with all edges of this graph
+	 * 
+	 * @return A string representation of this graph.
 	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		
+
 		/* Print vertices */
 		sb.append("[");
-		for (int i = 0; i < neighbours.size(); i++) {
-			sb.append(this.translate(i));
-			if (i != neighbours.size() - 1) {
+		for (int i = 0; i < getVertexCount(); i++) {
+			sb.append(translate(i));
+			if (i != getVertexCount() - 1) {
 				sb.append(", ");
 			}
 		}
 		sb.append("]\n");
-		
+
 		/* Print edges */
-		if (this.getEdgeCount() == 0) {
-			sb.append("no edges\n");
-		}
-		for (int i = 0; i < neighbours.size(); i++) {
-			LinkedList<Integer> queue = neighbours.get(i);
+		for (int i = 0; i < getVertexCount(); i++) {
+			LinkedList<Integer> queue = getNeighbours(i);
 			if (queue.isEmpty()) continue;
 			Collections.sort(queue);
 			for (int neighbour : queue) {
-				sb.append((translate(i)+1) + " --> " + (translate(neighbour)+1) + "\n");
+				sb.append((translate(i)+1) + "->" + (translate(neighbour)+1) + "\n");
 			}
 		}
+		sb.setLength(sb.length() - 1);
 		return sb.toString();
 	}
 	
 	/**
-	 * Translates vertex index to index for the whole graph. This is because, for a subgraph,
-	 * the vertices will have different vertex indices than for the whole graph.
-	 * @param vertex
-	 * @return the vertex index in the whole graph
+	 * Return a string containing the edges of this graph. Each line
+	 * is on the format u->v.
+	 */
+	public String edgeString() {
+		StringBuilder sb = new StringBuilder();
+
+		/* Print edges */
+		for (int i = 0; i < getVertexCount(); i++) {
+			LinkedList<Integer> queue = getNeighbours(i);
+			if (queue.isEmpty()) continue;
+			Collections.sort(queue);
+			for (int neighbour : queue) {
+				sb.append((translate(i)+1) + "->" + (translate(neighbour)+1) + "\n");
+			}
+		}
+		
+		if (sb.length() == 0) return "no edges";
+		
+		sb.setLength(sb.length() - 1);
+		return sb.toString();
+	}
+
+	/**
+	 * Translates the vertex index given as argument to a vertex
+	 * index for the graph this graph is a subgraph of. If this
+	 * graph is not a subgraph of another graph, no translation
+	 * will be done.
+	 * @param vertex The vertex to translate.
+	 * @return The translated vertex.
 	 */
 	public int translate(int vertex) {
 		if (translator == null) {
 			return vertex;
 		}
 		return translator[vertex];
+	}
+	
+	/**
+	 * Returns a list of elementary circuits in this graph.
+	 */
+	public List<List<Integer>> getCycles() {
+		JohnsonSimpleCycles<Integer, DefaultEdge> jsc = new JohnsonSimpleCycles<Integer, DefaultEdge>(this.graph);
+		return jsc.findSimpleCycles();
 	}
 }

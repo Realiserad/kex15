@@ -423,8 +423,8 @@ public class Heuristics {
 				strategies.add(Strategy.getSingletonStrategy(strongComponent));
 				continue;
 			}
-			int lowerBound = strongComponent.getLowerBoundNrOfPursuers();
-			int upperBound = strongComponent.getUpperBoundNrOfPursuers();
+			int lowerBound = strongComponent.getLowerBound();
+			int upperBound = strongComponent.getUpperBound();
 			Strategy strategy = linearSearch(lowerBound, upperBound, strongComponent);
 			strategies.add(strategy);
 		}

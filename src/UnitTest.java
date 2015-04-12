@@ -134,11 +134,11 @@ public class UnitTest {
 				{ 0, 1, 1, 0 },
 				{ 1, 0, 1, 0 },
 		});
-		ArrayList<LinkedList<Integer>> cycles = g.getCycles();
-		for (LinkedList<Integer> cycle : cycles) Collections.sort(cycle);
-		Collections.sort(cycles, new Comparator<LinkedList<Integer>>() {
+		List<List<Integer>> cycles = g.getCycles();
+		for (List<Integer> cycle : cycles) Collections.sort(cycle);
+		Collections.sort(cycles, new Comparator<List<Integer>>() {
 			@Override
-			public int compare(LinkedList<Integer> l1, LinkedList<Integer> l2) {
+			public int compare(List<Integer> l1, List<Integer> l2) {
 				int compare = l1.size() - l2.size();
 				int pos = 0;
 				while (compare == 0) {
@@ -161,11 +161,11 @@ public class UnitTest {
 				{ 0, 1, 0, 0, 1 },
 				{ 0, 0, 1, 0, 0 },
 		});
-		ArrayList<LinkedList<Integer>> cycles = g.getCycles();
-		for (LinkedList<Integer> cycle : cycles) Collections.sort(cycle);
-		Collections.sort(cycles, new Comparator<LinkedList<Integer>>() {
+		List<List<Integer>> cycles = g.getCycles();
+		for (List<Integer> cycle : cycles) Collections.sort(cycle);
+		Collections.sort(cycles, new Comparator<List<Integer>>() {
 			@Override
-			public int compare(LinkedList<Integer> l1, LinkedList<Integer> l2) {
+			public int compare(List<Integer> l1, List<Integer> l2) {
 				int compare = l1.size() - l2.size();
 				int pos = 0;
 				while (compare == 0) {
@@ -189,11 +189,11 @@ public class UnitTest {
 				{ 0, 0, 1, 0, 0, 1 },
 				{ 0, 0, 0, 0, 1, 0 },
 		});
-		ArrayList<LinkedList<Integer>> cycles = g.getCycles();
-		for (LinkedList<Integer> cycle : cycles) Collections.sort(cycle);
-		Collections.sort(cycles, new Comparator<LinkedList<Integer>>() {
+		List<List<Integer>> cycles = g.getCycles();
+		for (List<Integer> cycle : cycles) Collections.sort(cycle);
+		Collections.sort(cycles, new Comparator<List<Integer>>() {
 			@Override
-			public int compare(LinkedList<Integer> l1, LinkedList<Integer> l2) {
+			public int compare(List<Integer> l1, List<Integer> l2) {
 				int compare = l1.size() - l2.size();
 				int pos = 0;
 				while (compare == 0) {
@@ -216,11 +216,11 @@ public class UnitTest {
 				{ 0, 0, 1, 0, 0 },
 				{ 0, 1, 0, 0, 0 },
 		});
-		ArrayList<LinkedList<Integer>> cycles = g.getCycles();
-		for (LinkedList<Integer> cycle : cycles) Collections.sort(cycle);
-		Collections.sort(cycles, new Comparator<LinkedList<Integer>>() {
+		List<List<Integer>> cycles = g.getCycles();
+		for (List<Integer> cycle : cycles) Collections.sort(cycle);
+		Collections.sort(cycles, new Comparator<List<Integer>>() {
 			@Override
-			public int compare(LinkedList<Integer> l1, LinkedList<Integer> l2) {
+			public int compare(List<Integer> l1, List<Integer> l2) {
 				int compare = l1.size() - l2.size();
 				int pos = 0;
 				while (compare == 0) {
@@ -245,12 +245,12 @@ public class UnitTest {
 		});
 		List<Graph> strongComponents = g.getStrongComponents();
 		List<String> componentStrings = Arrays.asList(new String[] {
-				"1 --> 3\n2 --> 1\n3 --> 2\n",
-				"4 --> 5\n5 --> 4\n",
+				"1->3\n2->1\n3->2",
+				"4->5\n5->4",
 		});
 		assertTrue(strongComponents.size()==componentStrings.size());
 		for (Graph strongComponent : strongComponents) {
-			assertTrue(componentStrings.contains(strongComponent.toString()));
+			assertTrue(componentStrings.contains(strongComponent.edgeString()));
 		}
 	}
 
@@ -264,11 +264,11 @@ public class UnitTest {
 		});
 		List<Graph> strongComponents = g.getStrongComponents();
 		List<String> componentStrings = Arrays.asList(new String[] {
-				"1 --> 2\n2 --> 1\n2 --> 3\n3 --> 2\n3 --> 3\n3 --> 4\n4 --> 3\n4 --> 4\n",
+				"1->2\n2->1\n2->3\n3->2\n3->3\n3->4\n4->3\n4->4",
 		});
 		assertTrue(strongComponents.size()==componentStrings.size());
 		for (Graph strongComponent : strongComponents) {
-			assertTrue(componentStrings.contains(strongComponent.toString()));
+			assertTrue(componentStrings.contains(strongComponent.edgeString()));
 		}
 	}
 	
@@ -283,14 +283,14 @@ public class UnitTest {
 		});
 		List<Graph> strongComponents = g.getStrongComponents();
 		List<String> componentStrings = Arrays.asList(new String[] {
-				"1 --> 1\n",
-				"2 --> 2\n",
-				"3 --> 3\n3 --> 4\n4 --> 3\n",
-				"5 --> 5\n",
+				"1->1",
+				"2->2",
+				"3->3\n3->4\n4->3",
+				"5->5",
 		});
 		assertTrue(strongComponents.size()==componentStrings.size());
 		for (Graph strongComponent : strongComponents) {
-			assertTrue(componentStrings.contains(strongComponent.toString()));
+			assertTrue(componentStrings.contains(strongComponent.edgeString()));
 		}
 	}
 	
@@ -303,13 +303,13 @@ public class UnitTest {
 		});
 		List<Graph> strongComponents = g.getStrongComponents();
 		List<String> componentStrings = Arrays.asList(new String[] {
-				"no edges\n",
-				"no edges\n",
-				"3 --> 3\n",
+				"no edges",
+				"no edges",
+				"3->3",
 		});
 		assertTrue(strongComponents.size()==componentStrings.size());
 		for (Graph strongComponent : strongComponents) {
-			assertTrue(componentStrings.contains(strongComponent.toString()));
+			assertTrue(componentStrings.contains(strongComponent.edgeString()));
 		}
 	}
 }
