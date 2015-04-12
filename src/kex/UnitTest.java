@@ -1,11 +1,11 @@
-import static org.junit.Assert.*;
-import java.util.ArrayList;
+package kex;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 
+import static org.junit.Assert.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
