@@ -1,9 +1,9 @@
-package kex.selectors;
+package kex.heuristics.selectors;
 import java.util.LinkedList;
 import java.util.List;
 
 import kex.Graph;
-import kex.maxheap.MaxHeap;
+import kex.heuristics.selectors.maxheap.MaxHeap;
 
 
 /**

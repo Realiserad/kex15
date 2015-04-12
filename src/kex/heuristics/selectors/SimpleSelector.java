@@ -1,4 +1,4 @@
-package kex.selectors;
+package kex.heuristics.selectors;
 
 import java.util.ArrayList;
 import java.util.Arrays;
