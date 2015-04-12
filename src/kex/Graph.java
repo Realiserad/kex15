@@ -1,3 +1,4 @@
+package kex;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -385,7 +386,7 @@ public class Graph {
 			// Add v to the component it belongs to
 			comps[comp[v]-1].add(v);
 		}
-
+		
 		/* Create subgraphs from the components above */
 		return getSubgraphs(comps);
 	}

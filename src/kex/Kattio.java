@@ -1,3 +1,4 @@
+package kex;
 /** Simple yet moderately fast I/O routines.
  *
  * Example usage:

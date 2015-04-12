@@ -1,3 +1,4 @@
+package kex;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -6,6 +7,10 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import kex.selectors.GreedySelector;
+import kex.selectors.Selector;
+import kex.selectors.SimpleSelector;
+
 /**
  * Heuristics for The Monk problem.
  * @author Bastian Fredriksson
@@ -13,6 +18,10 @@ import java.util.List;
  */
 public class Heuristics {
 	private static boolean DEBUG = false;
+	
+	public enum SelectorType {
+	    SIMPLE, GREEDY,
+	}
 	
 	public enum StateInspectorType {
 	    BLOOM_FILTER, ARRAY,
@@ -363,8 +372,12 @@ public class Heuristics {
 		Heuristics heuristics = new Heuristics();
 		Strategy strategy = heuristics.solve(graph);
 		
+		
 		/* Print the vertices to be decontaminated at each day */
 		io.println(strategy.toString());
+		
+		/* Print length of solution */
+		io.println("Solution length: "+strategy.getLength());
 		
 		/* Verify the solution and print the result as a certificate */
 		if (strategy.verify(graph)) {
@@ -372,7 +385,15 @@ public class Heuristics {
 		} else {
 			io.println("The solution is not winning.");
 		}
+		
 		io.close();
+	}
+	
+	private Selector getSelector(SelectorType type) {
+		if (type == SelectorType.SIMPLE) return new SimpleSelector();
+		if (type == SelectorType.GREEDY) return new GreedySelector();
+		
+		return null;
 	}
 	
 	private StateInspector getStateInspector(StateInspectorType type, int vertexCount) {
@@ -444,6 +465,7 @@ public class Heuristics {
 		for (int pursuerCount = lower; pursuerCount <= upper; pursuerCount++) {
 			Strategy strategy = solve(
 					strongComponent, 
+					getSelector(SelectorType.GREEDY),
 					pursuerCount, 
 					pursuerCount,
 					strongComponent.getIndegree(),
@@ -474,7 +496,7 @@ public class Heuristics {
 	 * @return A winning strategy for the graph given as first argument or null
 	 * if no strategy could be found.
 	 */
-	private Strategy solve(Graph strongComponent, int staticPursuers, int dynPursuers, int[] currentState, int[] nextState, StateInspector stateInspector, int[] vertices, int depth) {
+	private Strategy solve(Graph strongComponent, Selector selector, int staticPursuers, int dynPursuers, int[] currentState, int[] nextState, StateInspector stateInspector, int[] vertices, int depth) {
 		assert(staticPursuers >= dynPursuers);
 		boolean newDay = (staticPursuers == dynPursuers);
 		boolean lastPursuer = (dynPursuers == 1);
@@ -499,8 +521,9 @@ public class Heuristics {
 			}
 		}
 		
+		List<Integer> pursueOrder = selector.selectOrder(strongComponent, currentState, nextState, dynPursuers);
 		/* Continue the pursuit by positioning pursuers at the next available positions. */
-		for (int vertex = 0; vertex < currentState.length; vertex++) {
+		for (int vertex : pursueOrder) {
 			assert(currentState[vertex] >= 0);
 			
 			if (currentState[vertex] == 0) {
@@ -520,6 +543,7 @@ public class Heuristics {
 						
 			Strategy strategy = solve(
 				strongComponent,
+				selector,
 				staticPursuers,
 				lastPursuer ? staticPursuers : dynPursuers - 1,
 				lastPursuer ? newNextState : newCurrentState,
