@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Vector;
 
 import kex.Graph;
 import kex.Kattio;
+import kex.Verify;
 import kex.heuristics.selectors.GreedySelector;
 import kex.heuristics.selectors.Selector;
 import kex.heuristics.selectors.SelectorType;
@@ -83,7 +85,6 @@ public class Heuristics {
 		Heuristics heuristics = new Heuristics();
 		Strategy strategy = heuristics.solve(graph);
 		
-		
 		/* Print the vertices to be decontaminated at each day */
 		io.println(strategy.toString());
 		
@@ -91,10 +92,12 @@ public class Heuristics {
 		io.println("Solution length: "+strategy.getLength());
 		
 		/* Verify the solution and print the result as a certificate */
-		if (strategy.verify(graph)) {
+		Verify verifier = new Verify(graph);
+		if (verifier.verify(strategy)) {
 			io.println("The solution is winning.");
 		} else {
 			io.println("The solution is not winning.");
+			io.print(verifier.getStatesString());
 		}
 		
 		io.close();
@@ -158,11 +161,36 @@ public class Heuristics {
 			int upperBound = strongComponent.getUpperBound();
 			Strategy strategy = binarySearch(lowerBound, upperBound, strongComponent);
 			strategies.add(strategy);
+			//strategies.add(testStrategy(strongComponent));
 		}
 		
 		return Strategy.merge(strategies);
 	}
 	
+	/**
+	 * Used for debug purposes. Hard code a strategy here. 
+	 */
+	private Strategy testStrategy(Graph g) {
+		Strategy strat = new Strategy(2, g);
+		int[][] stratMtrx = new int[][]{
+				{0, 6},		//Day 1
+				{1, 11},	//Day 2 etc
+				{10, 15},
+				{2, 3},
+				{2, 3},
+				{2, 3},
+				{2, 3},
+				{3, 14},
+				{3, 14},
+				{7, 14},
+		};
+		for (int[] dayStrat : stratMtrx) {
+			strat.addVertices(dayStrat);
+		}
+		
+		return strat;
+	}
+
 	/**
 	 * Perform a linear search for the search number of a strong component
 	 * given as third argument.
@@ -279,6 +307,7 @@ public class Heuristics {
 				/* It is possible to decontaminate the whole graph at this stage. */
 				Strategy strategy = new Strategy(staticPursuers, strongComponent);
 				d("Strategy found at depth " + depth + "!", depth);
+				d(depth + "\t" + arrayString(currentState) + "\t (" + contaminatedVertices.toString()+ ")");
 				return strategy.addVertices(contaminatedVertices);
 			}
 		}
@@ -291,7 +320,8 @@ public class Heuristics {
 			d("Testing vertex " + vertex, depth);
 			
 			/* Remember which vertex we put a pursuer on */
-			vertices[staticPursuers - dynPursuers] = vertex;
+			int[] newVertices = Arrays.copyOf(vertices, vertices.length);
+			newVertices[staticPursuers - dynPursuers] = vertex;
 			
 			/* Block edges originating from the current vertex */
 			int[] newCurrentState = Arrays.copyOf(currentState, currentState.length);
@@ -306,15 +336,16 @@ public class Heuristics {
 				lastPursuer ? newNextState : newCurrentState,
 				lastPursuer ? transition(newNextState, strongComponent) : newNextState,
 				stateInspector,
-				lastPursuer ? new int[staticPursuers] : vertices,
+				lastPursuer ? new int[staticPursuers] : newVertices,
 				lastPursuer ? depth + 1 : depth
 			);
 			if (strategy != null) {
 				/* Strategy has been found from here, backtrack */
 				if (lastPursuer) {
-					strategy.addVertices(vertices);
+					strategy.addVertices(newVertices);
+					d(depth + "\t" + arrayString(newCurrentState) + "\t (" + arrayString(newVertices)+ ")");
 				}
-				d("Strategy: " + strategy.getSimpleRepresentation(), depth);
+				//d("Strategy: " + strategy.getSimpleRepresentation(), depth);
 				return strategy;
 			}
 		}
@@ -354,7 +385,7 @@ public class Heuristics {
 		blockEdges(strongComponent, vertex, nextState);
 	}
 
-	/* 
+	/** 
 	 * Block edges u->v in a graph, given a pursuer is positioned at the
 	 * vertex u given as second argument. This method will block all edges originating
 	 * from u, meaning any neighbor v to u, will have its indegree reduced by one.

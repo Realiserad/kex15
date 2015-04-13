@@ -25,8 +25,8 @@ import org.jgrapht.graph.DefaultEdge;
  * @author Edvin Lundberg
  */
 public class Graph {
-	private DefaultDirectedGraph<Integer, DefaultEdge> graph;
-	private ArrayList<LinkedList<Integer>> adjacencyList;
+	private final DefaultDirectedGraph<Integer, DefaultEdge> graph;
+	private final ArrayList<LinkedList<Integer>> adjacencyList;
 	private int lowerBound, upperBound, estimate;
 	private int[] indegree, translator;
 
@@ -156,7 +156,6 @@ public class Graph {
 			return this.upperBound;
 		}
 
-		// TODO
 		this.upperBound = this.getVertexCount();
 		return this.upperBound;
 	}

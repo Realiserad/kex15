@@ -97,7 +97,7 @@ public class Strategy {
 		assert(vertices.length == pursuerCount);
 		
 		translate(vertices);
-		strategy.add(vertices);
+		strategy.addFirst(vertices);
 		return this;
 	}
 	
@@ -195,6 +195,17 @@ public class Strategy {
 	public boolean verify(Graph graph) {
 		Verify verifier = new Verify(graph);
 		/* The verifier uses indexing from one and up */
+		int[][] seed = getSeed();
+		return verifier.verify(getPursuerCount(), getLength(), seed);
+	}
+	
+	/**
+	 * Returns the strategy in the form of a seed:
+	 * A int matrix where seed[d] return the placements of
+	 * pursuer on day d.
+	 */
+	public int[][] getSeed() {
+		/* The verifier uses indexing from one and up */
 		int[][] seed = new int[getLength()][getPursuerCount()];
 		int day = 0;
 		for (int[] vertices : strategy) {
@@ -203,6 +214,6 @@ public class Strategy {
 			}
 			day++;
 		}
-		return verifier.verify(getPursuerCount(), getLength(), seed);
+		return seed;
 	}
 }
