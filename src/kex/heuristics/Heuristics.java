@@ -307,6 +307,7 @@ public class Heuristics {
 				/* It is possible to decontaminate the whole graph at this stage. */
 				Strategy strategy = new Strategy(staticPursuers, strongComponent);
 				d("Strategy found at depth " + depth + "!", depth);
+				// Debug
 				d(depth + "\t" + arrayString(currentState) + "\t (" + contaminatedVertices.toString()+ ")");
 				return strategy.addVertices(contaminatedVertices);
 			}
