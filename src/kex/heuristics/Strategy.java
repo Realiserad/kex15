@@ -27,6 +27,17 @@ public class Strategy {
 	}
 	
 	/**
+	 * Create a new strategy from a list of arrays, where each array contains the
+	 * vertices to be decontaminated at a specific day. All arrays in the list
+	 * should have equal length.
+	 * @param strategy An array with vertices to decontaminate at each day.
+	 */
+	private Strategy(LinkedList<int[]> strategy) {
+		this.strategy = strategy;
+		this.pursuerCount = strategy.get(0).length;
+	}
+
+	/**
 	 * Merge a list of strategies into one strategy.
 	 * The strategies will be merged in the same order
 	 * as they appear in the list.
@@ -40,7 +51,7 @@ public class Strategy {
 				maxPursuerCount = strategy.getPursuerCount();
 			}
 		}
-		Strategy commonStrategy = new Strategy(maxPursuerCount, null);
+		LinkedList<int[]> commonStrategy = new LinkedList<int[]>();
 		for (Strategy strategy : strategies) {
 			LinkedList<int[]> raw = strategy.getStrategy();
 			for (int[] vertices : raw) {
@@ -49,7 +60,7 @@ public class Strategy {
 				commonStrategy.addLast(copy);
 			}
 		}
-		return commonStrategy;
+		return new Strategy(commonStrategy);
 	}
 	
 	/**
