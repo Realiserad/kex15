@@ -146,6 +146,7 @@ public class Heuristics {
 		/* The strong components of this graph */
 		List<Graph> strongComponents = g.getStrongComponents();
 		d("Number of strong components: " + strongComponents.size());
+		e("Number of strong components: " + strongComponents.size());
 		/* A list of strategies for each stable component */
 		LinkedList<Strategy> strategies = new LinkedList<Strategy>();
 		/* Solve each strong component separately */
@@ -179,12 +180,12 @@ public class Heuristics {
 		for (int pursuerCount = lower; pursuerCount <= upper; pursuerCount++) {
 			Strategy strategy = solve(
 					strongComponent, 
-					getSelector(SelectorType.GREEDY),
+					getSelector(SelectorType.SIMPLE),
 					pursuerCount, 
 					pursuerCount,
 					strongComponent.getIndegree(),
 					strongComponent.getIndegree(),
-					getStateInspector(StateInspectorType.BLOOM_FILTER, strongComponent.getVertexCount()),
+					getStateInspector(StateInspectorType.ARRAY, strongComponent.getVertexCount()),
 					new int[pursuerCount],
 					0
 			);
@@ -268,6 +269,12 @@ public class Heuristics {
 		boolean lastPursuer = (dynPursuers == 1);
 		
 		d("State: " + arrayString(currentState) + " (" + staticPursuers + " " + dynPursuers + ")", depth);
+		
+		/* Backtrack if solution is too long */
+		if (depth > 2*strongComponent.getVertexCount()) {
+			d("Abort. Strategy too long.");
+			return null;
+		}
 		
 		if (newDay) {
 			/* This is a transition between two states */
@@ -358,8 +365,10 @@ public class Heuristics {
 	 * @param strongComponent A strongly connected graph.
 	 */
 	private void decontaminate(int[] currentState, int[] nextState, int vertex, Graph strongComponent) {
-		currentState[vertex] = 0;
-		blockEdges(strongComponent, vertex, nextState);
+		if (currentState[vertex] != 0) { 
+			currentState[vertex] = 0;
+			blockEdges(strongComponent, vertex, nextState);
+		}
 	}
 
 	/** 
@@ -429,27 +438,28 @@ public class Heuristics {
 	 */
 	@SuppressWarnings("unused")
 	private Strategy testStrategy(Graph g) {
-		Strategy strat = new Strategy(2, g);
+		Strategy strat = new Strategy(3, null);
 		int[][] stratMtrx = new int[][]{
-				{2, 0},		//Day 1
-				{2, 0},	    //Day 2 etc
-				{2, 15},
-				{2, 0},
-				{2, 0},
-				{2, 0},
-				{2, 0},
-				{3, 0},
-				{3, 0},
-				{0, 14},
-				{3, 0},
-				{0, 10},
-				{3, 14},
-				{3, 14},
-				{7, 14},
+				{0,1,8},		// Day 1
+				{3,11,17},	    // Day 2 etc
+				{8,12,20},
+				{2,3,20},
+				{2,3,20},
+				{0,2,20},
+				{0,2,17},
+				{0,2,17},
+				{0,2,8},
+				{0,8,17},
+				{0,17,22},
+				{0,2,17},
+				{8,22,27},
+				{17,21,22},
 		};
+		
 		for (int[] dayStrat : stratMtrx) {
 			strat.addLast(dayStrat);
 		}
+		
 		
 		return strat;
 	}

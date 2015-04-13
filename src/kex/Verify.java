@@ -124,11 +124,19 @@ public class Verify {
 			sb.append((i+1) + padding(i+1));
 			int[] state = states.get(i);
 			for (int j = 0; j < state.length; j++) {
-				sb.append(state[j] + " ");
+				sb.append(readable(state[j]) + " ");
 			}
 			sb.append("\n");
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Returns X if v is decontaminated, and _ if it is contaminated.
+	 * @param v The vertex value to check.
+	 */
+	private String readable(int v) {
+		return (v == 1) ? "X" : "_"; 
 	}
 
 	/**
