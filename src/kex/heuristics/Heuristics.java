@@ -235,7 +235,7 @@ public class Heuristics {
 				lower = p+1;
 			}
 			prevP = p;
-			p = (lower+upper)/2;	
+			p = (lower+upper)/2;
 		}
 		assert(bestStrategy != null);
 		return bestStrategy;
