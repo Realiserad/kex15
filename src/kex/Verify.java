@@ -2,6 +2,8 @@ package kex;
 import java.util.LinkedList;
 import java.util.List;
 
+import kex.heuristics.Strategy;
+
 /**
  * Verify a solution to The Monk problem using an EL-system. The solution should contain a
  * directed graph G consisting of one component, and a set of solution vectors describing the
@@ -112,6 +114,7 @@ public class Verify {
 	
 	/**
 	 * Returns String representing the states produced by last given solution.
+	 * A state of a day will have a 1 on decontaminated vertices and 0 on contaminated ones.
 	 * @return String representing the states produced by last given solution.
 	 */
 	public String getStatesString() {
@@ -121,11 +124,19 @@ public class Verify {
 			sb.append((i+1) + padding(i+1));
 			int[] state = states.get(i);
 			for (int j = 0; j < state.length; j++) {
-				sb.append(state[j] + " ");
+				sb.append(readable(state[j]) + " ");
 			}
 			sb.append("\n");
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Returns X if v is decontaminated, and _ if it is contaminated.
+	 * @param v The vertex value to check.
+	 */
+	private String readable(int v) {
+		return (v == 1) ? "X" : "_"; 
 	}
 
 	/**
@@ -239,5 +250,13 @@ public class Verify {
 			if (a[i] != 1) return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Verify a strategy.
+	 * @param strategy
+	 */
+	public boolean verify(Strategy strategy) {
+		return verify(strategy.getPursuerCount(), strategy.getLength(), strategy.getSeed());
 	}
 }
