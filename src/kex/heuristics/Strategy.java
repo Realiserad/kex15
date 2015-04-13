@@ -46,7 +46,7 @@ public class Strategy {
 			for (int[] vertices : raw) {
 				int[] copy = new int[maxPursuerCount];
 				for (int i = 0; i < vertices.length; i++) copy[i] = vertices[i];
-				commonStrategy.addVertices(copy);
+				commonStrategy.addLast(copy);
 			}
 		}
 		return commonStrategy;
@@ -60,7 +60,7 @@ public class Strategy {
 		
 		Strategy strategy = new Strategy(1, null);
 		int[] vertex = { singleton.translate(0) };
-		strategy.addVertices(vertex);
+		strategy.addFirst(vertex);
 		return strategy;
 	}
 	
@@ -93,7 +93,21 @@ public class Strategy {
 	 * @param vertices An array with as many vertices as this strategy has
 	 * pursuers, each vertex labeled with a number zero or higher.
 	 */
-	public Strategy addVertices(int[] vertices) {
+	public Strategy addLast(int[] vertices) {
+		assert(vertices.length == pursuerCount);
+		
+		translate(vertices);
+		strategy.addLast(vertices);
+		return this;
+	}
+	
+	/**
+	 * Same as addLast() but appends in reverse order, i.e add the vertices
+	 * to simultanously decontaminate at day 1.
+	 * @param vertices An array with as many vertices as this strategy has
+	 * pursuers, each vertex labeled with a number zero or higher.
+	 */
+	public Strategy addFirst(int[] vertices) {
 		assert(vertices.length == pursuerCount);
 		
 		translate(vertices);
@@ -103,13 +117,13 @@ public class Strategy {
 	
 	/**
 	 * Add vertices to this strategy. The vertices added are the vertices
-	 * to simultaneously decontaminate at day getLength() + 1. Vertex labels
+	 * to simultaneously decontaminate at day 1. Vertex labels
 	 * are translated before they are added according to the translator
 	 * given as argument when this strategy was created.
 	 * @param vertices A list with at most as many vertices as this strategy
 	 * has pursuers, each vertex labeled with a number zero or higher.
 	 */
-	public Strategy addVertices(LinkedList<Integer> vertices) {
+	public Strategy addFirst(LinkedList<Integer> vertices) {
 		assert(vertices.size() <= pursuerCount);
 		
 		int[] copy = new int[pursuerCount];
@@ -119,7 +133,7 @@ public class Strategy {
 			index++;
 		}
 		translate(copy);
-		strategy.add(copy);
+		strategy.addFirst(copy);
 		return this;
 	}
 	
@@ -152,7 +166,7 @@ public class Strategy {
 		StringBuilder sb = new StringBuilder();
 		for (int[] vertices : strategy) {
 			for (int vertex : vertices) {
-				sb.append((vertex + 1) + " ");
+				sb.append((vertex) + " ");
 			}
 			sb.append("\n");
 		}
@@ -176,7 +190,7 @@ public class Strategy {
 			}
 			sb.append("(");
 			for (int i = 0; i < vertices.length; i++) {
-				sb.append(vertices[i] + 1);
+				sb.append(vertices[i]);
 				if (i != vertices.length - 1) {
 					sb.append(" ");
 				}

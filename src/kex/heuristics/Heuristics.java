@@ -166,30 +166,6 @@ public class Heuristics {
 		
 		return Strategy.merge(strategies);
 	}
-	
-	/**
-	 * Used for debug purposes. Hard code a strategy here. 
-	 */
-	private Strategy testStrategy(Graph g) {
-		Strategy strat = new Strategy(2, g);
-		int[][] stratMtrx = new int[][]{
-				{0, 6},		//Day 1
-				{1, 11},	//Day 2 etc
-				{10, 15},
-				{2, 3},
-				{2, 3},
-				{2, 3},
-				{2, 3},
-				{3, 14},
-				{3, 14},
-				{7, 14},
-		};
-		for (int[] dayStrat : stratMtrx) {
-			strat.addVertices(dayStrat);
-		}
-		
-		return strat;
-	}
 
 	/**
 	 * Perform a linear search for the search number of a strong component
@@ -309,7 +285,7 @@ public class Heuristics {
 				d("Strategy found at depth " + depth + "!", depth);
 				// Debug
 				d(depth + "\t" + arrayString(currentState) + "\t (" + contaminatedVertices.toString()+ ")");
-				return strategy.addVertices(contaminatedVertices);
+				return strategy.addFirst(contaminatedVertices);
 			}
 		}
 		
@@ -343,7 +319,7 @@ public class Heuristics {
 			if (strategy != null) {
 				/* Strategy has been found from here, backtrack */
 				if (lastPursuer) {
-					strategy.addVertices(newVertices);
+					strategy.addFirst(newVertices);
 					d(depth + "\t" + arrayString(newCurrentState) + "\t (" + arrayString(newVertices)+ ")");
 				}
 				//d("Strategy: " + strategy.getSimpleRepresentation(), depth);
@@ -446,5 +422,35 @@ public class Heuristics {
 	
 	private void d(String msg) {
 		d(msg, 0);
+	}
+	
+	/**
+	 * Used for debug purposes. Hard code a strategy here. 
+	 */
+	@SuppressWarnings("unused")
+	private Strategy testStrategy(Graph g) {
+		Strategy strat = new Strategy(2, g);
+		int[][] stratMtrx = new int[][]{
+				{2, 0},		//Day 1
+				{2, 0},	    //Day 2 etc
+				{2, 15},
+				{2, 0},
+				{2, 0},
+				{2, 0},
+				{2, 0},
+				{3, 0},
+				{3, 0},
+				{0, 14},
+				{3, 0},
+				{0, 10},
+				{3, 14},
+				{3, 14},
+				{7, 14},
+		};
+		for (int[] dayStrat : stratMtrx) {
+			strat.addLast(dayStrat);
+		}
+		
+		return strat;
 	}
 }
