@@ -24,7 +24,7 @@ days (iterations).
 /---------------------------------------------------/
 You can create your own graphs using Generate.java
 
-java Generate --nodes 32 33 --edge --vcount > ws32-EE.txt
+java WattsStrogatz --nodes 32 33 --edge --vcount > ws32-EE.txt
 
 /---------------------------------------------------/
                 Decontaminate graphs
