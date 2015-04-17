@@ -77,7 +77,11 @@ public class GreedySelector implements Selector {
 			maxHeap.insert(new Vertex(0,0));
 		}
 		
-		return maxHeapToList(maxHeap);
+		//return maxHeapToList(maxHeap);
+		//Super greedy, only pick 1 value
+		List<Integer> res = new LinkedList<Integer>();
+		res.add(maxHeap.removemax().vertexNr);
+		return res;
 	}
 
 	/**

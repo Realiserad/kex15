@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Vector;
 
 import kex.Graph;
 import kex.Kattio;
