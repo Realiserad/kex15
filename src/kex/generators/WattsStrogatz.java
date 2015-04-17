@@ -1,4 +1,4 @@
-package kex;
+package kex.generators;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,7 +31,7 @@ import java.util.Random;
  *
  * @author Bastian Fredriksson
  */
-public class Generate {
+public class WattsStrogatz {
 	private class Edge {
 		public int a, b;
 		public Edge(int a, int b) {
@@ -82,10 +82,10 @@ public class Generate {
 			System.exit(0);
 		}
 		/* Generate */
-		new Generate();
+		new WattsStrogatz();
 	}
 
-	public Generate() {                
+	public WattsStrogatz() {                
 		Random r = new Random();
 		for (int i = 0; i < batch; i++) {
 			int nodes = r.nextInt(nodeUpper-nodeLower) + nodeLower;
