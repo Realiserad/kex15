@@ -12,6 +12,7 @@ import java.util.List;
  * @version 2015-04-12
  */
 public class GreedySelector implements Selector {
+	private final int limit=1;
 	
 	/**
 	 * Wrapped vertex which can be put into a Max Heap.
@@ -79,11 +80,15 @@ public class GreedySelector implements Selector {
 			maxHeap.insert(new Vertex(0,0,0));
 		}
 		
-		return maxHeapToList(maxHeap);
-		//Super greedy, only pick 1 value
-//		List<Integer> res = new LinkedList<Integer>();
-//		res.add(maxHeap.removemax().vertexNr);
-//		return res;
+//		return maxHeapToList(maxHeap);
+		//Super greedy, only pick 'limit' amount of values
+		List<Integer> res = new LinkedList<Integer>();
+		for (int i = 1; i <= limit; i++) {
+			if (maxHeap.heapsize()>0) {
+				res.add(maxHeap.removemax().vertexNr);
+			}
+		}
+		return res;
 	}
 
 	/**
