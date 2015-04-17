@@ -82,7 +82,10 @@ public class Heuristics {
 		
 		/* Decontaminate the graph */
 		Heuristics heuristics = new Heuristics();
+		long time = System.currentTimeMillis();
 		Strategy strategy = heuristics.solve(graph);
+		time = System.currentTimeMillis()-time;
+		
 		
 		/* Print the vertices to be decontaminated at each day */
 		io.println(strategy.toString());
@@ -99,6 +102,7 @@ public class Heuristics {
 			io.print(verifier.getStatesString());
 		}
 		
+		io.println("Solution found in: "+time+" ms");
 		io.close();
 	}
 	
