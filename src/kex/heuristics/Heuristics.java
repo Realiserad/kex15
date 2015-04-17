@@ -90,6 +90,9 @@ public class Heuristics {
 		/* Print the vertices to be decontaminated at each day */
 		io.println(strategy.toString());
 		
+		/* Print number of pursuers */
+		io.println("Number of pursuers: "+strategy.getPursuerCount());
+		
 		/* Print length of solution */
 		io.println("Solution length: "+strategy.getLength());
 		

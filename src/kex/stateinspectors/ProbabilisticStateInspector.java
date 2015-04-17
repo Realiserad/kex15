@@ -14,7 +14,7 @@ public class ProbabilisticStateInspector implements StateInspector {
 	 * @param vertexCount The number of vertices in the graph.
 	 */
 	public ProbabilisticStateInspector(int vertexCount) {
-		visitedStates = new BloomFilter<String>(0.001, (int) Math.pow(2, vertexCount));
+		visitedStates = new BloomFilter<String>(0.001, 2*vertexCount);
 	}
 	
 	@Override
