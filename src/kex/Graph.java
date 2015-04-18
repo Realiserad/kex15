@@ -147,12 +147,6 @@ public class Graph {
 		if (this.indegree == null) {
 			getIndegree();
 		}
-		
-		BronKerboschCliqueFinder<Integer, DefaultEdge> cf = new BronKerboschCliqueFinder<Integer, DefaultEdge>(graph); 
-		Collection<Set<Integer>> maxCliques = cf.getBiggestMaximalCliques();
-		for (Set<Integer> clique : maxCliques) {
-			System.err.println("MAXCLIQUE:: " + clique.size());
-		}
 
 		this.lowerBound = Math.max(1, min(indegree));
 		return this.lowerBound;
