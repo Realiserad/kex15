@@ -1,10 +1,12 @@
 package kex.heuristics.selectors;
 
-import kex.Graph;
-import kex.heuristics.selectors.maxheap.MaxHeap;
-
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
+
+import kex.Graph;
+import kex.heuristics.selectors.maxheap.MaxHeap;
 
 /**
  * The greedy selector will order the vertices based on the number of vertices which can get decontaminated the next day.
@@ -12,7 +14,7 @@ import java.util.List;
  * @version 2015-04-12
  */
 public class GreedySelector implements Selector {
-	private final int limit=1;
+	private Random rand = new Random();
 	
 	/**
 	 * Wrapped vertex which can be put into a Max Heap.
@@ -32,7 +34,9 @@ public class GreedySelector implements Selector {
 		
 		@Override
 		public int compareTo(Vertex otherVertex) {
-			return 1000*(this.blocking-otherVertex.blocking)+(this.outdegree-otherVertex.outdegree);
+			return this.blocking-otherVertex.blocking != 0 ?
+				this.blocking-otherVertex.blocking :
+				this.outdegree-otherVertex.outdegree;
 		}
 		
 	}
@@ -81,12 +85,36 @@ public class GreedySelector implements Selector {
 		}
 		
 		//Super greedy, only pick 'limit' amount of values
-		List<Integer> res = new LinkedList<Integer>();
-		for (int i = 1; i <= limit; i++) {
-			if (maxHeap.heapsize()>0) {
-				res.add(maxHeap.removemax().vertexNr);
-			}
-		}
+		
+		List<Integer> res = getBest(maxHeap);
+		return res;
+	}
+
+	private List<Integer> getBest(MaxHeap<Vertex> maxHeap) {
+		List<Integer> res = new ArrayList<Integer>();
+		Vertex prev = maxHeap.removemax();
+		res.add(prev.vertexNr);
+//		while (maxHeap.heapsize() > 0) {
+//			Vertex next = maxHeap.removemax();
+//			if (next.compareTo(prev) != 0) {
+//				break;
+//			}
+//			res.add(next.vertexNr);
+//			prev = next;
+//		}
+		
+//		while (rand.nextDouble() < 0.5 && maxHeap.heapsize() > 0) {
+//			Vertex next = maxHeap.removemax();
+////			if (next.compareTo(prev) != 0) {
+////				break;
+////			}
+//			res.add(next.vertexNr);
+//			prev = next;
+//		}
+		
+//		List<Integer> ll = new LinkedList<Integer>();
+//		ll.add(res.get(rand.nextInt(res.size())));
+//		return ll;
 		return res;
 	}
 

@@ -170,8 +170,8 @@ public class Heuristics {
 			}
 			int lowerBound = strongComponent.getLowerBound();
 			int upperBound = strongComponent.getUpperBound();
-			Strategy strategy = binarySearch(
-					Math.max(lowerBound, Math.max(search_num_approx,upperBound)),
+			Strategy strategy = linearSearch(
+					Math.min(Math.max(search_num_approx,lowerBound), strongComponent.getVertexCount()),
 					upperBound, 
 					strongComponent);
 			strategies.add(strategy);
@@ -192,7 +192,6 @@ public class Heuristics {
 	 */
 	private Strategy linearSearch(int lower, int upper, Graph strongComponent) {
 		
-		
 		for (int pursuerCount = lower; pursuerCount <= upper; pursuerCount++) {
 			Strategy strategy = solve(
 					strongComponent, 
@@ -201,8 +200,7 @@ public class Heuristics {
 					pursuerCount,
 					strongComponent.getIndegree(),
 					strongComponent.getIndegree(),
-					null,
-//					getStateInspector(StateInspectorType.BLOOM_FILTER, strongComponent.getVertexCount()),
+					getStateInspector(StateInspectorType.BLOOM_FILTER, strongComponent.getVertexCount()),
 					new int[pursuerCount],
 					0
 			);
@@ -231,8 +229,10 @@ public class Heuristics {
 		/* Start at estimate value */
 		int p = strongComponent.getEstimate();
 				
+		final int limit = 150;
 		/* Perform binary search */
-		while (lower < upper || bestStrategy == null) {
+		/* If the vertices are greater than 'limit' we exclude the binary search's last steps */
+		while (upper - lower > strongComponent.getVertexCount()/limit || bestStrategy == null) {
 			e("Trying with "+p+" pursuers.");
 			nextStrategy = solve(
 					strongComponent, 
@@ -473,7 +473,6 @@ public class Heuristics {
 		for (int[] dayStrat : stratMtrx) {
 			strat.addLast(dayStrat);
 		}
-		
 		
 		return strat;
 	}
