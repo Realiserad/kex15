@@ -20,7 +20,7 @@ public class GreedySelector implements Selector {
 	};
 	
 	private Random rand = new Random();
-	private MODE currentMode = MODE.FIRST_FIT;
+	private final MODE currentMode = MODE.FIRST_FIT;
 	/* Probability of not picking a vertex in next fit */
 	private double nextFitProbability = 0.75;
 	
@@ -102,11 +102,9 @@ public class GreedySelector implements Selector {
 		List<Integer> res = new ArrayList<Integer>();
 		Vertex prev = maxHeap.removemax();
 		res.add(prev.vertexNr);
-		if (currentMode == MODE.NEXT_FIT) {
-			
+		if (currentMode == MODE.FIRST_FIT) {
 			return res;
-		}
-		if (currentMode == MODE.RANDOM_FIT) {
+		} else if (currentMode == MODE.RANDOM_FIT) {
 			while (maxHeap.heapsize() > 0) {
 				Vertex next = maxHeap.removemax();
 				if (next.compareTo(prev) != 0) {
@@ -118,16 +116,16 @@ public class GreedySelector implements Selector {
 			List<Integer> randomFit = new LinkedList<Integer>();
 			randomFit.add(res.get(rand.nextInt(res.size())));
 			return randomFit;
-		}
-		if (currentMode == MODE.NEXT_FIT) {
+		} else if (currentMode == MODE.NEXT_FIT) {
 			while (rand.nextDouble() < nextFitProbability && maxHeap.heapsize() > 0) {
 				prev = maxHeap.removemax();
 			}
 			LinkedList<Integer> ll = new LinkedList<Integer>();
 			ll.add(prev.vertexNr);
 			return ll;
+		} else {
+			return null;
 		}
-		return null;
 	}
 
 	/**
