@@ -16,11 +16,11 @@ import kex.heuristics.selectors.maxheap.MaxHeap;
 public class GreedySelector implements Selector {
 	/* Current mode of operation */
 	enum MODE {
-		FIRST_FIT, RANDOM_FIT, NEXT_FIT
+		FIRST_FIT, RANDOM_FIT, NEXT_FIT, BRUTE
 	};
 	
 	private Random rand = new Random();
-	private final MODE currentMode = MODE.FIRST_FIT;
+	private final MODE currentMode = MODE.BRUTE;
 	/* Probability of not picking a vertex in next fit */
 	private double nextFitProbability = 0.75;
 	
@@ -123,6 +123,11 @@ public class GreedySelector implements Selector {
 			LinkedList<Integer> ll = new LinkedList<Integer>();
 			ll.add(prev.vertexNr);
 			return ll;
+		} else if (currentMode == MODE.BRUTE){
+			while (maxHeap.heapsize()>0) {
+				res.add(maxHeap.removemax().vertexNr);
+			}
+			return res;
 		} else {
 			return null;
 		}

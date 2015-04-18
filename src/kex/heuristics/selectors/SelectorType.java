@@ -7,5 +7,5 @@ package kex.heuristics.selectors;
  * @version 2015-04-12
  */
 public enum SelectorType {
-	SIMPLE, GREEDY,
+	SIMPLE, GREEDY, RANDOM,
 }

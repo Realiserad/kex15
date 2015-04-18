@@ -11,6 +11,7 @@ import kex.Graph;
 import kex.Kattio;
 import kex.Verify;
 import kex.heuristics.selectors.GreedySelector;
+import kex.heuristics.selectors.RandomSelector;
 import kex.heuristics.selectors.Selector;
 import kex.heuristics.selectors.SelectorType;
 import kex.heuristics.selectors.SimpleSelector;
@@ -114,7 +115,7 @@ public class Heuristics {
 	private Selector getSelector(SelectorType type) {
 		if (type == SelectorType.SIMPLE) return new SimpleSelector();
 		if (type == SelectorType.GREEDY) return new GreedySelector();
-		
+		if (type == SelectorType.RANDOM) return new RandomSelector();
 		return null;
 	}
 	
@@ -174,8 +175,8 @@ public class Heuristics {
 					Math.min(Math.max(search_num_approx,lowerBound), strongComponent.getVertexCount()),
 					upperBound, 
 					strongComponent);
-			strategies.add(strategy);
-			//strategies.add(testStrategy(strongComponent));
+//			strategies.add(strategy);
+			strategies.add(testStrategy(strongComponent));
 			search_num_approx = Math.max(search_num_approx, strategy.getPursuerCount());
 		}
 		
@@ -229,7 +230,7 @@ public class Heuristics {
 		/* Start at estimate value */
 		int p = strongComponent.getEstimate();
 				
-		final int limit = 50;
+		final int limit = 150;
 		/* Perform binary search */
 		/* If the vertices are greater than 'limit' we exclude the binary search's last steps */
 		while (upper - lower > strongComponent.getVertexCount()/limit || bestStrategy == null) {
@@ -307,7 +308,7 @@ public class Heuristics {
 				// Debug
 				d(depth + "\t" + arrayString(currentState) + "\t (" + contaminatedVertices.toString()+ ")");
 				return strategy.addFirst(contaminatedVertices);
-			}
+			}		
 		}
 		
 		List<Integer> pursueOrder = selector.selectOrder(strongComponent, currentState, nextState, dynPursuers);
@@ -325,6 +326,14 @@ public class Heuristics {
 			int[] newCurrentState = Arrays.copyOf(currentState, currentState.length);
 			int[] newNextState = Arrays.copyOf(nextState, nextState.length);
 			decontaminate(newCurrentState, newNextState, vertex, strongComponent);
+			
+//			if (lastPursuer) {
+//				if (getContaminatedVertices(newCurrentState, staticPursuers).size() > 
+//				(getContaminatedVertices(newNextState, staticPursuers).size()+staticPursuers) ) {
+//					assert(false);
+//					return null; // Decreasing strategy
+//				}
+//			}
 						
 			Strategy strategy = solve(
 				strongComponent,
@@ -452,8 +461,8 @@ public class Heuristics {
 	 */
 	@SuppressWarnings("unused")
 	private Strategy testStrategy(Graph g) {
-		Strategy strat = new Strategy(3, null);
-		int[][] stratMtrx = new int[][]{
+		Strategy strat = new Strategy(4, null);
+		int[][] stratMtrx = new int[][]{				
 				{0,1,8},		// Day 1
 				{3,11,17},	    // Day 2 etc
 				{8,12,20},
@@ -471,7 +480,7 @@ public class Heuristics {
 		};
 		
 		for (int[] dayStrat : stratMtrx) {
-			strat.addLast(dayStrat);
+			strat.addFirst(dayStrat);
 		}
 		
 		return strat;
