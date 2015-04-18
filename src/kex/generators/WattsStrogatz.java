@@ -27,6 +27,8 @@ import java.util.Random;
  * --vcount Output number of vertices on first     |    off                 |
  *   row. Will be disabled unless used together    |                        |
  *   with --edge flag.                             |                        |
+ * --density X Add ~X extra edges per node in the  |    no extra edges      |
+ *   graph                                         |                        |
  * -------------------------------------------------------------------------|
  *
  * @author Bastian Fredriksson
@@ -44,6 +46,7 @@ public class WattsStrogatz {
 	private static int nodeLower = 4;
 	private static int nodeUpper = 1000;
 	private static int rand = 100;
+	private static int density = 0;
 	private static boolean file = false;
 	private static boolean asEdges = false;
 	private static boolean vertexCount = false;
@@ -68,6 +71,9 @@ public class WattsStrogatz {
 				asEdges = true;
 			} else if (args[i].equals("--vcount")) {
 				vertexCount = true;
+			} else if (args[i].equals("--density")) {
+				density = Integer.valueOf(args[i+1]);
+				i++;
 			} else {
 				System.err.println("Unknown flag " + args[i]);
 				System.exit(0);
@@ -115,6 +121,16 @@ public class WattsStrogatz {
 					int ep = r.nextInt(nodes);
 					if (ep == column) ep = column+1%nodes;
 					m[ep][column]=1;
+				}
+			}
+			// Add extra edges
+			if (density > 0) {
+				for (int j = 0; j < nodes; j++) {
+					for (int k = 0; k < density; k++) {
+						int from = r.nextInt(nodes);
+						int to = r.nextInt(nodes);
+						m[to][from] = 1;
+					}
 				}
 			}
 			// Print result
