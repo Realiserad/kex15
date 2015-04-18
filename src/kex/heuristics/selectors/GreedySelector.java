@@ -12,6 +12,7 @@ import java.util.List;
  * @version 2015-04-12
  */
 public class GreedySelector implements Selector {
+	private final int limit=1;
 	
 	/**
 	 * Wrapped vertex which can be put into a Max Heap.
@@ -21,15 +22,17 @@ public class GreedySelector implements Selector {
 
 		final int vertexNr;
 		final int key;
+		final int outdegree;
 		
-		public Vertex(int vertexNr, int key) {
+		public Vertex(int vertexNr, int key, int outdegree) {
 			this.vertexNr = vertexNr;
 			this.key = key;
+			this.outdegree=outdegree;
 		}
 		
 		@Override
 		public int compareTo(Vertex otherVertex) {
-			return this.key-otherVertex.key;
+			return 1000*(this.key-otherVertex.key)+(this.outdegree-otherVertex.outdegree);
 		}
 		
 	}
@@ -68,16 +71,24 @@ public class GreedySelector implements Selector {
 			
 			if (c > 0) {
 				// We have a candidate vertex
-				maxHeap.insert(new Vertex(v,c));
+				maxHeap.insert(new Vertex(v,c,g.getNeighbours(v).size()));
 			}
 		}
 		
 		// Sometimes we may have to place a pursuer on a already decontaminated vertex.
 		if (maxHeap.heapsize()==0) {
-			maxHeap.insert(new Vertex(0,0));
+			maxHeap.insert(new Vertex(0,0,0));
 		}
 		
-		return maxHeapToList(maxHeap);
+//		return maxHeapToList(maxHeap);
+		//Super greedy, only pick 'limit' amount of values
+		List<Integer> res = new LinkedList<Integer>();
+		for (int i = 1; i <= limit; i++) {
+			if (maxHeap.heapsize()>0) {
+				res.add(maxHeap.removemax().vertexNr);
+			}
+		}
+		return res;
 	}
 
 	/**

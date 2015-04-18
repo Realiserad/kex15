@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Vector;
 
 import kex.Graph;
 import kex.Kattio;
@@ -83,10 +82,16 @@ public class Heuristics {
 		
 		/* Decontaminate the graph */
 		Heuristics heuristics = new Heuristics();
+		long time = System.currentTimeMillis();
 		Strategy strategy = heuristics.solve(graph);
+		time = System.currentTimeMillis()-time;
+		
 		
 		/* Print the vertices to be decontaminated at each day */
 		io.println(strategy.toString());
+		
+		/* Print number of pursuers */
+		io.println("Number of pursuers: "+strategy.getPursuerCount());
 		
 		/* Print length of solution */
 		io.println("Solution length: "+strategy.getLength());
@@ -100,6 +105,7 @@ public class Heuristics {
 			io.print(verifier.getStatesString());
 		}
 		
+		io.println("Solution found in: "+time+" ms");
 		io.close();
 	}
 	
