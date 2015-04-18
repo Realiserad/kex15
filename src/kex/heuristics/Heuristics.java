@@ -171,12 +171,12 @@ public class Heuristics {
 			int lowerBound = strongComponent.getLowerBound();
 			int upperBound = strongComponent.getUpperBound();
 			Strategy strategy = binarySearch(
-					lowerBound > search_num_approx ? lowerBound : search_num_approx, 
+					Math.max(lowerBound, Math.max(search_num_approx,upperBound)),
 					upperBound, 
 					strongComponent);
 			strategies.add(strategy);
 			//strategies.add(testStrategy(strongComponent));
-			search_num_approx = (search_num_approx > strategy.getPursuerCount()) ? search_num_approx : strategy.getPursuerCount();
+			search_num_approx = Math.max(search_num_approx, strategy.getPursuerCount());
 		}
 		
 		return Strategy.merge(strategies);
@@ -191,6 +191,8 @@ public class Heuristics {
 	 * @return A winning strategy for g or null.
 	 */
 	private Strategy linearSearch(int lower, int upper, Graph strongComponent) {
+		
+		
 		for (int pursuerCount = lower; pursuerCount <= upper; pursuerCount++) {
 			Strategy strategy = solve(
 					strongComponent, 
@@ -228,8 +230,7 @@ public class Heuristics {
 		Strategy nextStrategy = null;
 		/* Start at estimate value */
 		int p = strongComponent.getEstimate();
-		assert(p<=upper && p >= lower);
-		
+				
 		/* Perform binary search */
 		while (lower < upper || bestStrategy == null) {
 			e("Trying with "+p+" pursuers.");
