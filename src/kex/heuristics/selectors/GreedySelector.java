@@ -14,7 +14,15 @@ import kex.heuristics.selectors.maxheap.MaxHeap;
  * @version 2015-04-12
  */
 public class GreedySelector implements Selector {
+	/* Current mode of operation */
+	enum MODE {
+		FIRST_FIT, RANDOM_FIT, NEXT_FIT
+	};
+	
 	private Random rand = new Random();
+	private MODE currentMode = MODE.FIRST_FIT;
+	/* Probability of not picking a vertex in next fit */
+	private double nextFitProbability = 0.75;
 	
 	/**
 	 * Wrapped vertex which can be put into a Max Heap.
@@ -94,28 +102,32 @@ public class GreedySelector implements Selector {
 		List<Integer> res = new ArrayList<Integer>();
 		Vertex prev = maxHeap.removemax();
 		res.add(prev.vertexNr);
-//		while (maxHeap.heapsize() > 0) {
-//			Vertex next = maxHeap.removemax();
-//			if (next.compareTo(prev) != 0) {
-//				break;
-//			}
-//			res.add(next.vertexNr);
-//			prev = next;
-//		}
-		
-//		while (rand.nextDouble() < 0.5 && maxHeap.heapsize() > 0) {
-//			Vertex next = maxHeap.removemax();
-////			if (next.compareTo(prev) != 0) {
-////				break;
-////			}
-//			res.add(next.vertexNr);
-//			prev = next;
-//		}
-		
-//		List<Integer> ll = new LinkedList<Integer>();
-//		ll.add(res.get(rand.nextInt(res.size())));
-//		return ll;
-		return res;
+		if (currentMode == MODE.NEXT_FIT) {
+			
+			return res;
+		}
+		if (currentMode == MODE.RANDOM_FIT) {
+			while (maxHeap.heapsize() > 0) {
+				Vertex next = maxHeap.removemax();
+				if (next.compareTo(prev) != 0) {
+					break;
+				}
+				res.add(next.vertexNr);
+				prev = next;
+			}
+			List<Integer> randomFit = new LinkedList<Integer>();
+			randomFit.add(res.get(rand.nextInt(res.size())));
+			return randomFit;
+		}
+		if (currentMode == MODE.NEXT_FIT) {
+			while (rand.nextDouble() < nextFitProbability && maxHeap.heapsize() > 0) {
+				prev = maxHeap.removemax();
+			}
+			LinkedList<Integer> ll = new LinkedList<Integer>();
+			ll.add(prev.vertexNr);
+			return ll;
+		}
+		return null;
 	}
 
 	/**
