@@ -21,18 +21,18 @@ public class GreedySelector implements Selector {
 	private class Vertex implements Comparable<Vertex> {
 
 		final int vertexNr;
-		final int key;
+		final int blocking;
 		final int outdegree;
 		
 		public Vertex(int vertexNr, int key, int outdegree) {
 			this.vertexNr = vertexNr;
-			this.key = key;
+			this.blocking = key;
 			this.outdegree=outdegree;
 		}
 		
 		@Override
 		public int compareTo(Vertex otherVertex) {
-			return 1000*(this.key-otherVertex.key)+(this.outdegree-otherVertex.outdegree);
+			return 1000*(this.blocking-otherVertex.blocking)+(this.outdegree-otherVertex.outdegree);
 		}
 		
 	}
@@ -80,7 +80,6 @@ public class GreedySelector implements Selector {
 			maxHeap.insert(new Vertex(0,0,0));
 		}
 		
-//		return maxHeapToList(maxHeap);
 		//Super greedy, only pick 'limit' amount of values
 		List<Integer> res = new LinkedList<Integer>();
 		for (int i = 1; i <= limit; i++) {

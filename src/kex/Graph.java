@@ -25,7 +25,7 @@ import org.jgrapht.graph.DefaultEdge;
  * @author Edvin Lundberg
  */
 public class Graph {
-	private final DefaultDirectedGraph<Integer, DefaultEdge> graph;
+	private DefaultDirectedGraph<Integer, DefaultEdge> graph;
 	private final ArrayList<LinkedList<Integer>> adjacencyList;
 	private int lowerBound, upperBound, estimate;
 	private int[] indegree, translator;

@@ -77,15 +77,16 @@ public class Heuristics {
 			adjacencyList.get(u).add(v);
 		}
 		
+		
 		/* Create graph from adjacency list */
 		Graph graph = new Graph(adjacencyList);
+		
 		
 		/* Decontaminate the graph */
 		Heuristics heuristics = new Heuristics();
 		long time = System.currentTimeMillis();
 		Strategy strategy = heuristics.solve(graph);
-		time = System.currentTimeMillis()-time;
-		
+		time = System.currentTimeMillis()-time;		
 		
 		/* Print the vertices to be decontaminated at each day */
 		io.println(strategy.toString());
@@ -104,6 +105,7 @@ public class Heuristics {
 			io.println("The solution is not winning.");
 			io.print(verifier.getStatesString());
 		}
+		
 		
 		io.println("Solution found in: "+time+" ms");
 		io.close();
@@ -155,6 +157,8 @@ public class Heuristics {
 		e("Number of strong components: " + strongComponents.size());
 		/* A list of strategies for each stable component */
 		LinkedList<Strategy> strategies = new LinkedList<Strategy>();
+		// The maximum pursuers needed for solved components.
+		int search_num_approx = 0;
 		/* Solve each strong component separately */
 		for (Graph strongComponent : strongComponents) {
 			d("Number of nodes: " + strongComponent.getVertexCount());
@@ -166,9 +170,13 @@ public class Heuristics {
 			}
 			int lowerBound = strongComponent.getLowerBound();
 			int upperBound = strongComponent.getUpperBound();
-			Strategy strategy = binarySearch(lowerBound, upperBound, strongComponent);
+			Strategy strategy = binarySearch(
+					lowerBound > search_num_approx ? lowerBound : search_num_approx, 
+					upperBound, 
+					strongComponent);
 			strategies.add(strategy);
 			//strategies.add(testStrategy(strongComponent));
+			search_num_approx = (search_num_approx > strategy.getPursuerCount()) ? search_num_approx : strategy.getPursuerCount();
 		}
 		
 		return Strategy.merge(strategies);
@@ -186,12 +194,13 @@ public class Heuristics {
 		for (int pursuerCount = lower; pursuerCount <= upper; pursuerCount++) {
 			Strategy strategy = solve(
 					strongComponent, 
-					getSelector(SelectorType.SIMPLE),
+					getSelector(SelectorType.GREEDY),
 					pursuerCount, 
 					pursuerCount,
 					strongComponent.getIndegree(),
 					strongComponent.getIndegree(),
-					getStateInspector(StateInspectorType.ARRAY, strongComponent.getVertexCount()),
+					null,
+//					getStateInspector(StateInspectorType.BLOOM_FILTER, strongComponent.getVertexCount()),
 					new int[pursuerCount],
 					0
 			);
@@ -214,16 +223,15 @@ public class Heuristics {
 	 * @return A winning strategy for g or null.
 	 */
 	private Strategy binarySearch(int lower, int upper, Graph strongComponent) {
-		
+		e("Lower: "+lower+" Upper: "+upper);
 		Strategy bestStrategy = null;
 		Strategy nextStrategy = null;
 		/* Start at estimate value */
 		int p = strongComponent.getEstimate();
-		int prevP = p+1; // Previous value of p, when not changing we have a solution
 		assert(p<=upper && p >= lower);
 		
 		/* Perform binary search */
-		while (p != prevP) {
+		while (lower < upper || bestStrategy == null) {
 			e("Trying with "+p+" pursuers.");
 			nextStrategy = solve(
 					strongComponent, 
@@ -245,7 +253,6 @@ public class Heuristics {
 				e("Failed.");
 				lower = p+1;
 			}
-			prevP = p;
 			p = (lower+upper)/2;
 		}
 		assert(bestStrategy != null);
