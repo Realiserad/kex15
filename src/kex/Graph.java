@@ -2,6 +2,7 @@ package kex;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -11,6 +12,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import org.jgrapht.alg.BronKerboschCliqueFinder;
 import org.jgrapht.alg.StrongConnectivityInspector;
 import org.jgrapht.alg.cycle.JohnsonSimpleCycles;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -144,6 +146,12 @@ public class Graph {
 		/* Check if indegree already calculated */
 		if (this.indegree == null) {
 			getIndegree();
+		}
+		
+		BronKerboschCliqueFinder<Integer, DefaultEdge> cf = new BronKerboschCliqueFinder<Integer, DefaultEdge>(graph); 
+		Collection<Set<Integer>> maxCliques = cf.getBiggestMaximalCliques();
+		for (Set<Integer> clique : maxCliques) {
+			System.err.println("MAXCLIQUE:: " + clique.size());
 		}
 
 		this.lowerBound = Math.max(1, min(indegree));
