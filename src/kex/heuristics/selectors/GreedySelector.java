@@ -20,7 +20,7 @@ public class GreedySelector implements Selector {
 	};
 	
 	private Random rand = new Random();
-	private final MODE currentMode = MODE.BRUTE;
+	private final MODE currentMode = MODE.FIRST_FIT;
 	/* Probability of not picking a vertex in next fit */
 	private double nextFitProbability = 0.75;
 	

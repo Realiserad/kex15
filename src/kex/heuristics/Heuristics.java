@@ -175,9 +175,9 @@ public class Heuristics {
 					Math.min(Math.max(search_num_approx,lowerBound), strongComponent.getVertexCount()),
 					upperBound, 
 					strongComponent);
-//			strategies.add(strategy);
-			strategies.add(testStrategy(strongComponent));
+			strategies.add(strategy);
 			search_num_approx = Math.max(search_num_approx, strategy.getPursuerCount());
+//			strategies.add(testStrategy(strongComponent));
 		}
 		
 		return Strategy.merge(strategies);
@@ -230,7 +230,7 @@ public class Heuristics {
 		/* Start at estimate value */
 		int p = strongComponent.getEstimate();
 				
-		final int limit = 150;
+		final int limit = 100;
 		/* Perform binary search */
 		/* If the vertices are greater than 'limit' we exclude the binary search's last steps */
 		while (upper - lower > strongComponent.getVertexCount()/limit || bestStrategy == null) {
