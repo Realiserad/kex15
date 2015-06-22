@@ -1,4 +1,4 @@
-package kex.heuristics.selectors;
+package kex.solvers.selectors;
 import java.util.List;
 
 import kex.Graph;

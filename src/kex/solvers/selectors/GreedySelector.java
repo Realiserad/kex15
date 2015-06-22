@@ -1,4 +1,4 @@
-package kex.heuristics.selectors;
+package kex.solvers.selectors;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Random;
 
 import kex.Graph;
-import kex.heuristics.selectors.maxheap.MaxHeap;
+import kex.solvers.selectors.maxheap.MaxHeap;
 
 /**
  * The greedy selector will order the vertices based on the number of vertices which can get decontaminated the next day.

@@ -1,4 +1,4 @@
-package kex.heuristics;
+package kex.solvers;
 
 import java.util.LinkedList;
 

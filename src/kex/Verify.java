@@ -2,7 +2,7 @@ package kex;
 import java.util.LinkedList;
 import java.util.List;
 
-import kex.heuristics.Strategy;
+import kex.solvers.Strategy;
 
 /**
  * Verify a solution to The Monk problem using an EL-system. The solution should contain a

@@ -1,4 +1,4 @@
-package kex.heuristics.selectors;
+package kex.solvers.selectors;
 
 /**
  * Defining different selector types.
